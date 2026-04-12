@@ -1,0 +1,14 @@
+# ----------------------------------------
+
+# ARCHIVO DE DEPENDENCIAS  
+# Las librerias se iran agregando a medida que se decidan
+
+# Para instalar: pip install -r requirements.txt
+# Para actualizar: pip freeze > requirements.txt
+
+# ----------------------------------------
+
+python-dotenv # gestion de entorno
+boto3 # AWS
+
+# -----------------------------------------
