@@ -9,24 +9,27 @@
   - [Websocket API → Frontend](#websocket-api--frontend)
     - [Notas](#notas-1)
     - [Payload](#payload-1)
-  - [Frontend → Websocket API → (...) → Raspberry Pi](#frontend--websocket-api----raspberry-pi)
+  - [Frontend → Websocket API](#frontend--websocket-api)
     - [Notas](#notas-2)
     - [Payload](#payload-2)
     - [Respuesta](#respuesta)
-  - [REST API: Endpoint /api/signup](#rest-api-endpoint-apisignup)
+  - [Websocket API → Cloud Receptor → IoT Core → Raspberry Pi](#websocket-api--cloud-receptor--iot-core--raspberry-pi)
     - [Notas](#notas-3)
+    - [Payload](#payload-3)
+  - [REST API: Endpoint /api/signup](#rest-api-endpoint-apisignup)
+    - [Notas](#notas-4)
     - [Response 200 OK](#response-200-ok)
     - [Response 409 | 400 | 500](#response-409--400--500)
   - [REST API: Endpoint /api/login](#rest-api-endpoint-apilogin)
-    - [Notas](#notas-4)
+    - [Notas](#notas-5)
     - [Response 200 OK](#response-200-ok-1)
     - [Response 401 | 400 | 500](#response-401--400--500)
   - [REST API: Endpoint /api/events](#rest-api-endpoint-apievents)
-    - [Notas](#notas-5)
+    - [Notas](#notas-6)
     - [Response 200 OK](#response-200-ok-2)
     - [Response 401 | 400 | 500](#response-401--400--500-1)
   - [REST API: Endpoint /api/stats/(?)](#rest-api-endpoint-apistats)
-    - [Notas](#notas-6)
+    - [Notas](#notas-7)
     - [Response 200 OK](#response-200-ok-3)
 - [**Esquemas**](#esquemas)
   - [PostgreSQL](#postgresql)
@@ -112,30 +115,46 @@
 ```
 * "type" solo será "INITIAL\_STATE" en la comunicación HTTPS inicial que establece la conexión
 
-## Frontend → Websocket API → (...) → Raspberry Pi
+## Frontend → Websocket API
 
 ### Notas
 
 * Objetivo: Comandar la captura de una foto actual.  
-* Protocolo: Websocket (HTTPS para establecer la conexión, luego TCP), No se (Cloud Receptor → IoT Core), MQTT (IoT Core → Raspberry Pi). 
+* Protocolo: Websocket (HTTPS para establecer la conexión, luego TCP). 
 
 ### Payload
 ```
 {
   "action": "TAKE_PHOTO",
-  "requestId": "integer"
+  "parking_id": "string"
 }
 ```
 
 ### Respuesta
 ```
 {
-  "requestId": "integer",
   "data": "byte[]",
   "status": "ok | string",
 }
 ```
 * “status” será el mensaje de error en caso de que algo falle.
+
+## Websocket API → Cloud Receptor → IoT Core → Raspberry Pi
+
+### Notas
+
+* Objetivo: Redireccionar la petición de una foto hasta el Raspberry Pi.  
+* Protocolo: Function call (Websocket API → Cloud Receptor), No se (Cloud Receptor → IoT Core), MQTT (IoT Core → Raspberry Pi).
+
+### Payload
+```
+{
+  "action": "TAKE_PHOTO",
+  "parking_id": "string",
+  "requestId": "UUID"
+}
+```
+* “requestId” es generado y almacenado en memoria por API Websockets para tener registro de cada cliente simultáneo.
 
 ## REST API: Endpoint /api/signup
 
