@@ -125,6 +125,7 @@
 ### Payload
 ```
 {
+  "accessToken": "jwt_access_token",
   "action": "TAKE_PHOTO",
   "parking_id": "string"
 }
@@ -179,7 +180,7 @@
     "id": "integer",
     "email": "string"
   },
-  "token": "string"
+  "accessToken": "jwt_access_token"
 }
 ```
 ### Response 409 | 400 | 500
@@ -232,6 +233,11 @@
   * 200 OK  
   * 400 Bad Request \- Query params faltantes o en mal formato  
   * 500 Internal server error
+
+### Header
+```
+  "authorization": "bearer 'jwt_access_token'"
+```
 
 ### Response 200 OK
 ```
