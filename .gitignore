@@ -143,7 +143,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-/pi_mock/secrets
 
 # Spyder project settings
 .spyderproject

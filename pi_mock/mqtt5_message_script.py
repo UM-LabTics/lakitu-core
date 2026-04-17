@@ -1,218 +1,192 @@
-
+import base64
 import datetime
 import io
 import json
-import base64
+import os
+import threading
+import time
+import uuid
 from pathlib import Path
-
-from awsiot import mqtt5_client_builder
+import numpy as np
 from awscrt import mqtt5
-import threading, time
-import argparse, uuid
+from awsiot import mqtt5_client_builder
 from PIL import Image
 
-parser = argparse.ArgumentParser(
-    description="Mock iot device",
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-)
-required = parser.add_argument_group("required arguments")
-optional = parser.add_argument_group("optional arguments")
+# ── Configuración ────────────────────────────────────────────────────────────────
 
-# Required Arguments
-required.add_argument("--endpoint", required=True, metavar="", dest="input_endpoint",
-                      help="IoT endpoint hostname")
-required.add_argument("--cert", required=True, metavar="", dest="input_cert",
-                    help="Path to the certificate file to use during mTLS connection establishment")
-required.add_argument("--key", required=True, metavar="", dest="input_key",
-                    help="Path to the private key file to use during mTLS connection establishment")
+IOT_ENDPOINT   = os.environ["IOT_ENDPOINT"]
+IOT_CERT_PATH  = os.environ["IOT_CERT_PATH"]   # desde ./secrets/
+IOT_KEY_PATH   = os.environ["IOT_KEY_PATH"]
+IOT_TOPIC      = os.environ.get("IOT_TOPIC", "parking/default/detections")
+IOT_CLIENT_ID      = os.environ.get("IOT_CLIENT_ID", f"mock-pi-{uuid.uuid4().hex[:8]}")
 
-# Optional Arguments
-optional.add_argument("--client_id", metavar="",dest="input_clientId", default=f"mqtt5-sample-{uuid.uuid4().hex[:8]}",
-                      help="Client ID")
-optional.add_argument("--topic", metavar="",default="no-topic", dest="input_topic",
-                      help="Topic")
-optional.add_argument("--message", metavar="",default="no-message", dest="input_message",
-                      help="Message payload")
-optional.add_argument("--count", type=int, metavar="",default=5, dest="input_count",
-                      help="Messages to publish")
+MESSAGE_COUNT       = int(os.environ.get("MESSAGE_COUNT", "5"))     # 0 = ejecutar indefinidamente
+SEND_INTERVAL       = float(os.environ.get("SEND_INTERVAL_SECONDS", "5"))
+NUM_SPOTS           = int(os.environ.get("NUM_SPOTS", "30"))
+PARKING_ID          = os.environ.get("PARKING_ID", "parking-1")
+PARKING_NAME        = os.environ.get("PARKING_NAME", "LATU Parking")
 
-# args contains all the parsed commandline arguments
-args = parser.parse_args()
+TIMEOUT = 100   # segundos a esperar antes de declarar timeout en operaciones MQTT (conexión, publicación, etc.)
 
-TIMEOUT = 100
-message_count = args.input_count
-message_topic = args.input_topic
-message_string = args.input_message
-# Events used within callbacks to progress sample
+# ── Fuente de las imágenes ────────────────────────────────────────────────────────
+
+IMAGES_DIR = Path("image_captures")
+HARDCODED_IMAGE_PATHS = [IMAGES_DIR / f"lot_{i}.jpg" for i in range(1, 17)]
+
+# ── Eventos del ciclo de vida MQTT ────────────────────────────────────────────────
+
 connection_success_event = threading.Event()
-stopped_event = threading.Event()
-received_all_event = threading.Event()
-received_count = 0
+stopped_event            = threading.Event()
 
 
-# Callback when any publish is received
-def on_publish_received(publish_packet_data):
-    publish_packet = publish_packet_data.publish_packet
-    print("==== Received message from topic '{}': {} ====\n".format(
-        publish_packet.topic, publish_packet.payload.decode('utf-8')))
-
-    # Track number of publishes received
-    global received_count
-    received_count += 1
-    if received_count == args.input_count:
-        received_all_event.set()
+def on_lifecycle_attempting_connect(data: mqtt5.LifecycleAttemptingConnectData):
+    print(f"[pi_mock] Connecting to '{IOT_ENDPOINT}' as '{IOT_CLIENT_ID}'...")
 
 
-# Callback for the lifecycle event Stopped
-def on_lifecycle_stopped(lifecycle_stopped_data: mqtt5.LifecycleStoppedData):
-    print("Lifecycle Stopped\n")
-    stopped_event.set()
-
-
-# Callback for lifecycle event Attempting Connect
-def on_lifecycle_attempting_connect(lifecycle_attempting_connect_data: mqtt5.LifecycleAttemptingConnectData):
-    print("Lifecycle Connection Attempt\nConnecting to endpoint: '{}' with client ID'{}'".format(
-        args.input_endpoint, args.input_clientId))
-
-
-# Callback for the lifecycle event Connection Success
-def on_lifecycle_connection_success(lifecycle_connect_success_data: mqtt5.LifecycleConnectSuccessData):
-    connack_packet = lifecycle_connect_success_data.connack_packet
-    print("Lifecycle Connection Success with reason code:{}\n".format(
-        repr(connack_packet.reason_code)))
+def on_lifecycle_connection_success(data: mqtt5.LifecycleConnectSuccessData):
+    print(f"[pi_mock] Connected. Reason: {data.connack_packet.reason_code!r}")
     connection_success_event.set()
 
 
-# Callback for the lifecycle event Connection Failure
-def on_lifecycle_connection_failure(lifecycle_connection_failure: mqtt5.LifecycleConnectFailureData):
-    print("Lifecycle Connection Failure with exception:{}".format(
-        lifecycle_connection_failure.exception))
+def on_lifecycle_connection_failure(data: mqtt5.LifecycleConnectFailureData):
+    print(f"[pi_mock] Connection failed: {data.exception}")
 
 
-# Callback for the lifecycle event Disconnection
-def on_lifecycle_disconnection(lifecycle_disconnect_data: mqtt5.LifecycleDisconnectData):
-    print("Lifecycle Disconnected with reason code:{}".format(
-        lifecycle_disconnect_data.disconnect_packet.reason_code if lifecycle_disconnect_data.disconnect_packet else "None"))
-
-payloads = {}
-IMAGES_DIR = Path("script/image_captures")
-HARDCODED_IMAGE_PATHS = [IMAGES_DIR / f"lot_{i}.jpg" for i in range(1, 17)]
+def on_lifecycle_disconnection(data: mqtt5.LifecycleDisconnectData):
+    reason = (
+        data.disconnect_packet.reason_code
+        if data.disconnect_packet else "None"
+    )
+    print(f"[pi_mock] Disconnected. Reason: {reason}")
 
 
-def create_mock_message(count):
-    for i in range(count):
-        image_path = HARDCODED_IMAGE_PATHS[i % len(HARDCODED_IMAGE_PATHS)]
+def on_lifecycle_stopped(data: mqtt5.LifecycleStoppedData):
+    print("[pi_mock] MQTT client stopped.")
+    stopped_event.set()
+
+
+def on_publish_received(data):
+    pkt = data.publish_packet
+    print(f"[pi_mock] Received on '{pkt.topic}': {pkt.payload.decode()}")
+
+# ── Construcción del payload ─────────────────────────────────────────────────────
+
+def load_and_encode_image(index: int) -> str:
+
+    image_path = HARDCODED_IMAGE_PATHS[index % len(HARDCODED_IMAGE_PATHS)]
+
+    if image_path.exists():
         img = Image.open(image_path)
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-        res = img.resize((960, 540))
-        buffer = io.BytesIO()
-        res.save(buffer, format="JPEG", quality=70)
-        buffer.seek(0)
-        image_base64 = base64.b64encode(buffer.read()).decode("ascii")
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        img = img.resize((960, 540))
+    else:
+        # Fallback artificial de imagen gris 960×540
+        arr = np.full((540, 960, 3), 128, dtype="uint8")
+        img = Image.fromarray(arr)
 
-        total_spots = 30
-        base_time = datetime.datetime.now(datetime.timezone.utc)
-        spots = []
-        for spot_index in range(total_spots):
-            has_parked_car = (i + spot_index) % 2 == 0
-            confidence = 0.99 if spot_index % 2 == 0 else 0.96
-            last_changed = (base_time - datetime.timedelta(seconds=spot_index * 3)).isoformat()
-            spots.append({
-                "spot_id": f"spot_{spot_index + 1:02d}",
-                "status": 1 if has_parked_car else 0,
-                "confidence": confidence,
-                "last_changed": last_changed
-            })
-
-        free_spots = sum(1 for spot in spots if spot["status"] == 0)
-        
-        payloads[f"payload_{i}"] = {
-            "device_id": f"{i}",
-            "parking_id": "parking 1",
-            "parking_name": "LATU Parking",
-            "timestamp": base_time.isoformat(),
-            "seq": f"message_{i}",
-            "snapshot": image_base64,
-            "total_spots": total_spots,
-            "free_spots": free_spots,
-            "spots": spots
-        }
-    
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=70)
+    buf.seek(0)
+    return base64.b64encode(buf.read()).decode("ascii")
 
 
+def build_payload(sequence_index: int) -> dict:
 
-if __name__ == '__main__':
-    print("\nStarting MQTT5 X509 Mock Device\n")
-    message_count = args.input_count
-    message_topic = args.input_topic
-    message_string = args.input_message
+    base_time = datetime.datetime.now(datetime.timezone.utc)
 
-    if message_count > 0:
-        create_mock_message(message_count)
+    spots = []
+    for spot_index in range(NUM_SPOTS):
+        occupied = (sequence_index + spot_index) % 2 == 0
+        confidence = 0.99 if spot_index % 2 == 0 else 0.96
+        last_changed = (
+            base_time - datetime.timedelta(seconds=spot_index * 3)
+        ).isoformat()
+        spots.append({
+            "spot_id": f"spot_{spot_index + 1:02d}",
+            "status": 1 if occupied else 0,
+            "confidence": confidence,
+            "last_changed": last_changed,
+        })
 
-    # Create MQTT5 client using mutual TLS via X509 Certificate and Private Key
-    print("==== Creating MQTT5 Client ====\n")
-    client = mqtt5_client_builder.mtls_from_path(
-        endpoint=args.input_endpoint,
-        cert_filepath=args.input_cert,
-        pri_key_filepath=args.input_key,
+    free_spots = sum(1 for s in spots if s["status"] == 0)
+
+    return {
+        "device_id": IOT_CLIENT_ID,
+        "parking_id": PARKING_ID,
+        "parking_name": PARKING_NAME,
+        "timestamp": base_time.isoformat(),
+        "seq": f"message_{sequence_index}",
+        "snapshot": load_and_encode_image(sequence_index),
+        "total_spots": NUM_SPOTS,
+        "free_spots": free_spots,
+        "spots": spots,
+    }
+
+# ── main ─────────────────────────────────────────────────────────────────────────
+
+def main():
+    print("[pi_mock] Starting MQTT5 mock device")
+    print(f"[pi_mock]   endpoint  : {IOT_ENDPOINT}")
+    print(f"[pi_mock]   topic     : {IOT_TOPIC}")
+    print(f"[pi_mock]   client_id : {IOT_CLIENT_ID}")
+    print(f"[pi_mock]   cert      : {IOT_CERT_PATH}")
+    print(f"[pi_mock]   count     : {'∞' if MESSAGE_COUNT == 0 else MESSAGE_COUNT}")
+    print(f"[pi_mock]   interval  : {SEND_INTERVAL}s")
+
+    builder_kwargs = dict(
+        endpoint=IOT_ENDPOINT,
+        cert_filepath=IOT_CERT_PATH,
+        pri_key_filepath=IOT_KEY_PATH,
         on_publish_received=on_publish_received,
         on_lifecycle_stopped=on_lifecycle_stopped,
         on_lifecycle_attempting_connect=on_lifecycle_attempting_connect,
         on_lifecycle_connection_success=on_lifecycle_connection_success,
         on_lifecycle_connection_failure=on_lifecycle_connection_failure,
         on_lifecycle_disconnection=on_lifecycle_disconnection,
-        client_id=args.input_clientId)
-    
+        client_id=IOT_CLIENT_ID,
+    )
 
-    # Start the client, instructing the client to desire a connected state. The client will try to 
-    # establish a connection with the provided settings. If the client is disconnected while in this 
-    # state it will attempt to reconnect automatically.
-    print("==== Starting client ====")
+
+    client = mqtt5_client_builder.mtls_from_path(**builder_kwargs)
+
     client.start()
 
-    # We await the `on_lifecycle_connection_success` callback to be invoked.
     if not connection_success_event.wait(TIMEOUT):
-        raise TimeoutError("Connection timeout")
+        raise TimeoutError("[pi_mock] Timed out waiting for connection.")
 
+    publish_index = 0
+    run_forever = MESSAGE_COUNT == 0
 
-  
+    while run_forever or publish_index < MESSAGE_COUNT:
+        payload = build_payload(publish_index)
+        payload_bytes = json.dumps(payload).encode("utf-8")
 
-    # Publish
-    if message_count == 0:
-        print("==== Sending messages until program killed ====\n")
-    else:
-        print("==== Sending {} message(s) ====\n".format(message_count))
-
-    publish_count = 1
-    while publish_count <= message_count:
-        payload_obj = payloads[f"payload_{publish_count - 1}"]
-        payload_bytes = json.dumps(payload_obj).encode("utf-8")
         print(
-            f"Publishing payload {publish_count}/{message_count} to topic '{message_topic}' "
-            f"({len(payload_bytes)} bytes)"
+            f"[pi_mock] Publishing message {publish_index + 1}"
+            + ("" if run_forever else f"/{MESSAGE_COUNT}")
+            + f" to '{IOT_TOPIC}' ({len(payload_bytes):,} bytes)"
         )
-        print(f"\nPayload content (truncated to 3000 chars): {repr(payload_bytes[:3000])}\n")
-        publish_future = client.publish(mqtt5.PublishPacket(
-            topic=message_topic,
+
+        future = client.publish(mqtt5.PublishPacket(
+            topic=IOT_TOPIC,
             payload=payload_bytes,
-            qos=mqtt5.QoS.AT_LEAST_ONCE
+            qos=mqtt5.QoS.AT_LEAST_ONCE,
         ))
-        publish_completion_data = publish_future.result(TIMEOUT)
-        print("PubAck received with {}\n".format(repr(publish_completion_data.puback.reason_code)))
-        time.sleep(5)
-        publish_count += 1
+        result = future.result(TIMEOUT)
+        print(f"[pi_mock] PubAck: {result.puback.reason_code!r}")
 
-    received_all_event.wait(TIMEOUT)
-    print("{} message(s) received.\n".format(received_count))
+        publish_index += 1
+        time.sleep(SEND_INTERVAL)
 
-    
-    # Stop the client. Instructs the client to disconnect and remain in a disconnected state.
-    print("==== Stopping Client ====")
+    print("[pi_mock] All messages sent. Stopping client.")
     client.stop()
 
     if not stopped_event.wait(TIMEOUT):
-        raise TimeoutError("Stop timeout")
+        raise TimeoutError("[pi_mock] Timed out waiting for stop.")
 
-    print("==== Client Stopped! ====")
+    print("[pi_mock] Done.")
+
+
+if __name__ == "__main__":
+    main()
