@@ -17,7 +17,7 @@ from PIL import Image
 IOT_ENDPOINT   = os.environ["IOT_ENDPOINT"]
 IOT_CERT_PATH  = os.environ["IOT_CERT_PATH"]   # desde ./secrets/
 IOT_KEY_PATH   = os.environ["IOT_KEY_PATH"]
-IOT_TOPIC      = os.environ.get("IOT_TOPIC", "parking/default/detections")
+IOT_TOPIC      = os.environ.get("IOT_TOPIC", "parking/state_update")
 IOT_CLIENT_ID      = os.environ.get("IOT_CLIENT_ID", f"mock-pi-{uuid.uuid4().hex[:8]}")
 
 MESSAGE_COUNT       = int(os.environ.get("MESSAGE_COUNT", "5"))     # 0 = ejecutar indefinidamente
