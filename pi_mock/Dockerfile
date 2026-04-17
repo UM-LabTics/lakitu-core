@@ -3,15 +3,16 @@ FROM python:3.11-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1 \
-    libglib2.0-0 \
+    gcc \
+    g++ \
+    cmake \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir \
+    awsiotsdk==1.22.0 \
     boto3==1.34.0 \
-    Pillow==10.3.0 \
-    numpy==1.26.4 \
-    opencv-python-headless==4.9.0.80
+    Pillow==10.3.0
 
 COPY . .
 
