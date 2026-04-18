@@ -1,14 +1,96 @@
-# ----------------------------------------
-
-# ARCHIVO DE DEPENDENCIAS  
-# Las librerias se iran agregando a medida que se decidan
-
-# Para instalar: pip install -r requirements.txt
-# Para actualizar: pip freeze > requirements.txt
-
-# ----------------------------------------
-
-python-dotenv # gestion de entorno
-boto3 # AWS
-
-# -----------------------------------------
+pip-requirements
+annotated-doc==0.0.4
+    # via fastapi
+annotated-types==0.7.0
+    # via pydantic
+anyio==4.13.0
+    # via
+    #   starlette
+    #   watchfiles
+bcrypt==4.0.1 #No es el más muevo pero es el que funciona con passlib
+    # via passlib
+boto3==1.42.88
+    # via -r requirements.in
+botocore==1.42.88
+    # via
+    #   boto3
+    #   s3transfer
+click==8.3.2
+    # via uvicorn
+colorama==0.4.6
+    # via
+    #   click
+    #   uvicorn
+fastapi==0.135.3
+    # via -r requirements.in
+greenlet==3.4.0
+    # via sqlalchemy
+h11==0.16.0
+    # via uvicorn
+httptools==0.7.1
+    # via uvicorn
+idna==3.11
+    # via anyio
+jmespath==1.1.0
+    # via
+    #   boto3
+    #   botocore
+passlib[bcrypt]==1.7.4
+    # via -r requirements.in
+psycopg[binary]==3.3.3
+    # via -r requirements.in
+pydantic==2.13.0
+    # via
+    #   fastapi
+    #   pydantic-settings
+pydantic-core==2.46.0
+    # via pydantic
+pydantic-settings==2.13.1
+    # via -r requirements.in
+pyjwt==2.12.1
+    # via -r requirements.in
+python-dateutil==2.9.0.post0
+    # via botocore
+python-dotenv==1.2.2
+    # via
+    #   pydantic-settings
+    #   uvicorn
+python-multipart==0.0.26
+    # via -r requirements.in
+pyyaml==6.0.3
+    # via uvicorn
+redis==7.4.0
+    # via -r requirements.in
+s3transfer==0.16.0
+    # via boto3
+six==1.17.0
+    # via python-dateutil
+sqlalchemy==2.0.49
+    # via -r requirements.in
+starlette==1.0.0
+    # via fastapi
+typing-extensions==4.15.0
+    # via
+    #   anyio
+    #   fastapi
+    #   psycopg
+    #   pydantic
+    #   pydantic-core
+    #   sqlalchemy
+    #   starlette
+    #   typing-inspection
+typing-inspection==0.4.2
+    # via
+    #   fastapi
+    #   pydantic
+    #   pydantic-settings
+tzdata==2026.1
+    # via psycopg
+urllib3==2.6.3
+    # via botocore
+uvicorn[standard]==0.44.0
+    # via -r requirements.in
+watchfiles==1.1.1
+    # via uvicorn
+websockets==16.0
+    # via uvicorn
