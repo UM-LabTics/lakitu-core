@@ -7,7 +7,7 @@ from functools import partial
 from pathlib import Path
 from datetime import timezone
 
-from ...models import StateUpdate
+from app.models import StateUpdate
  
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
@@ -35,6 +35,7 @@ class CloudReceptorSettings(BaseSettings):
     sqs_poll_interval_seconds: int = Field(default=2, ge=1)
     sqs_max_messages: int = Field(default=10, ge=1, le=10)  # SQS hard-limit: 10
 
+    log_level: str = "INFO"
 
 # ---------------------------------------------------------------------------
 # CloudReceptor
@@ -170,33 +171,25 @@ class CloudReceptor:
             return
 
         # --- Log (sin snapshot) --------------------------------------------
-        free_bar  = "█" * msg.free_spots
-        occ_bar   = "░" * msg.occupied_spots
+
 
         spot_lines = "\n".join(
-            f"    [{s.spot_id}]  {'FREE    ' if s.status == 0 else 'OCCUPIED'}  "
-            f"conf={s.confidence:.2f}  last_changed={s.last_changed.strftime('%H:%M:%S')}"
+            f"│    [{s.spot_id}]  {'FREE    ' if s.status == 0 else 'OCCUPIED'}  conf={s.confidence:.2f}  last_changed={s.last_changed.strftime('%H:%M:%S')}".ljust(68) + "│"
             for s in msg.spots
         )
 
         logger.info(
             "\n"
-            "┌─ SQS Message ───────────────────────────────────────────┐\n"
-            "  MessageId   : %s\n"
-            "  Device      : %s\n"
-            "  Parking     : %s (%s)\n"
-            "  Timestamp   : %s  (seq=%d)\n"
-            "  Occupancy   : %d/%d spots free  [%s%s] %s%%\n"
-            "  Spots:\n%s\n"
-            "└─────────────────────────────────────────────────────────┘",
-            message_id,
-            msg.device_id,
-            msg.parking_name, msg.parking_id,
-            msg.timestamp.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
-            msg.seq,
-            msg.free_spots, msg.total_spots,
-            free_bar, occ_bar, msg.occupancy_pct,
-            spot_lines,
+             "┌─SQS Message".ljust(53,"─") + "┐\n"
+            f"│  MessageId   : {message_id}".ljust(70) + "│\n"
+            f"│  Seq         : {msg.seq}".ljust(70) + "│\n"
+            f"│  Device      : {msg.device_id}".ljust(70) + "│\n"
+            f"│  Parking     : {msg.parking_name} ({msg.parking_id})".ljust(70) + "│\n"
+            f"│  Timestamp   : {msg.timestamp.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}".ljust(70) + "│\n"
+            f"│  Occupancy   : {msg.free_spots}/{msg.total_spots} spots free ({msg.occupancy_pct}%)".ljust(70) + "│\n"
+            f"│  Spots:".ljust(70) + "│\n"
+            f"{spot_lines}\n"
+             "└────────────────────────────────────────────────┘"
         )
 
         # --- Snapshot --------------------------------------------------------
