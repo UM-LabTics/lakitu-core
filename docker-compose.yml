@@ -1,0 +1,57 @@
+services:
+
+# ── BACKEND ────────────────────────────────────────────────────────────────
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Sobrescribe / agrega cualquier cosa que siempre sea la misma en desarrollo independientemente de
+      # lo que haya en .env. Redis siempre es local en desarrollo, así que lo hardcodeamos.
+      REDIS_URL: "redis://redis:6379/0"
+      ENVIRONMENT: "development"
+    volumes:
+        ./backend:/app  # hot-reload - uvicorn reinicia cuando detecta un guardado con cambios
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: >
+      uvicorn app.main:app
+        --host 0.0.0.0
+        --port 8000
+        --reload
+        --reload-dir /app/app
+
+# ── SIMULADOR DEL PI ────────────────────────────────────────────────────────────
+
+  pi_mock:
+    build:
+      context: ./pi_mock
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./pi_mock:/app
+      - ./secrets:/run/secrets:ro        # certificados read-only
+
+# ── REDIS ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  redis_data:
