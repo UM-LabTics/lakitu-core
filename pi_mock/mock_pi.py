@@ -114,7 +114,7 @@ def build_payload(sequence_index: int) -> dict:
         "parking_id": PARKING_ID,
         "parking_name": PARKING_NAME,
         "timestamp": base_time.isoformat(),
-        "seq": f"message_{sequence_index}",
+        "seq": sequence_index,
         "snapshot": load_and_encode_image(sequence_index),
         "total_spots": NUM_SPOTS,
         "free_spots": free_spots,
@@ -153,7 +153,7 @@ def main():
     if not connection_success_event.wait(TIMEOUT):
         raise TimeoutError("[pi_mock] Timed out waiting for connection.")
 
-    publish_index = 0
+    publish_index = 1
     run_forever = MESSAGE_COUNT == 0
 
     while run_forever or publish_index < MESSAGE_COUNT:
