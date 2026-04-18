@@ -7,7 +7,6 @@ import threading
 import time
 import uuid
 from pathlib import Path
-import numpy as np
 from awscrt import mqtt5
 from awsiot import mqtt5_client_builder
 from PIL import Image
@@ -82,8 +81,7 @@ def load_and_encode_image(index: int) -> str:
         img = img.resize((960, 540))
     else:
         # Fallback artificial de imagen gris 960×540
-        arr = np.full((540, 960, 3), 128, dtype="uint8")
-        img = Image.fromarray(arr)
+        img = Image.new("RGB", (960, 540), (255, 0, 0))
 
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=70)
