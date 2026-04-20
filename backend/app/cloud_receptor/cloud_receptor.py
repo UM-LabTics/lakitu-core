@@ -3,11 +3,12 @@ import base64
 import binascii
 import json
 import logging
+import os
 from functools import partial
 from pathlib import Path
 from datetime import timezone
 
-from app.models import StateUpdate
+from app.models import StateUpdateEvent
  
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
@@ -16,7 +17,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
 SNAPSHOT_DIR = Path("/tmp/parking_snapshots")
-
+ENVIRONMENT = os.getenv("ENVIRONMENT", "production").lower()
 # ---------------------------------------------------------------------------
 # Configuracion — Pydantic lee valores de variables de entorno, pero nos quedamos solo con las que realmente necesitamos acá. 
 # En EC2, las credenciales de AWS van a venir a través de un rol IAM de la instancia, si se dejan en None boto3 entiende eso. 
@@ -102,7 +103,7 @@ class CloudReceptor:
     async def _poll_loop(self) -> None:
         while self._running:
             try:
-                await self._poll_once()
+                await self._receive_messages()
             except asyncio.CancelledError:
                 raise                       # Si cancelan la tarea, salimos del loop de una.
             except Exception as e:
@@ -110,7 +111,7 @@ class CloudReceptor:
                 logger.exception("Unexpected error in SQS poll loop.\n%s", e)
             await asyncio.sleep(self.settings.sqs_poll_interval_seconds)
 
-    async def _poll_once(self) -> None:
+    async def _receive_messages(self) -> None:
         """Pide un conjunto de mensajes y los procesa."""
         loop = asyncio.get_running_loop()
 
@@ -123,7 +124,7 @@ class CloudReceptor:
                     MaxNumberOfMessages=self.settings.sqs_max_messages,
                     # Después pongamos WaitTimeSeconds=20 para long polling, 
                     # por ahora lo dejamos en 0 para desarrollo y testing.
-                    WaitTimeSeconds=0,
+                    WaitTimeSeconds = 0 if ENVIRONMENT == "development" else 20,
                     AttributeNames=["All"],
                     MessageAttributeNames=["All"],
                 ),
@@ -140,11 +141,11 @@ class CloudReceptor:
         logger.info("Received %d message(s) from SQS.", len(messages))
 
         for raw_msg in messages:
-            await self._handle_message(raw_msg)
+            await self._process_message(raw_msg)
 
 
-    async def _handle_message(self, raw_msg: dict) -> None:
-        """Procesa un mensaje individual: parsea, valida, logea, guarda snapshot, borra mensaje de la queue."""
+    async def _process_message(self, raw_msg: dict) -> None:
+        """Procesa un mensaje individual: parsea, valida, logea, guarda snapshot en local (para debug), borra mensaje de la queue."""
         message_id = raw_msg.get("MessageId", "<no-id>")
         receipt_handle = raw_msg["ReceiptHandle"]
         body_raw = raw_msg.get("Body", "")
@@ -161,7 +162,7 @@ class CloudReceptor:
             return
 
         try:
-            msg = StateUpdate.model_validate(payload)
+            msg = StateUpdateEvent.model_validate(payload)
         except Exception:
             logger.exception(
                 "[SQS] MessageId=%s — payload failed schema validation. "
@@ -192,13 +193,18 @@ class CloudReceptor:
              "└────────────────────────────────────────────────┘"
         )
 
-        # --- Snapshot --------------------------------------------------------
-        await self._save_snapshot(msg)
+        # --- Snapshot (DEBUG) ------------------------------------------------
+        if ENVIRONMENT == "development":
+            await self._save_snapshot(msg)
+
+        # --- UpdateState a Cloud Backend (TODO) ------------------------------
+        # cloud_backend.update_state(msg)
 
         # --- Done ------------------------------------------------------------
         await self._delete_message(receipt_handle, message_id)
 
-    async def _save_snapshot(self, msg: StateUpdate) -> None:
+    # PARA DEBUG
+    async def _save_snapshot(self, msg: StateUpdateEvent) -> None:
         """Decodifica el snapshot de base64 y lo guarda en disco. Se hace en un thread separado para no bloquear el loop de asyncio con operaciones de I/O."""
         loop = asyncio.get_running_loop()
 

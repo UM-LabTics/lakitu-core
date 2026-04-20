@@ -9,7 +9,7 @@ class SpotState(BaseModel):
     last_changed: datetime
 
 
-class StateUpdate(BaseModel):
+class StateUpdateEvent(BaseModel):
     device_id: str
     parking_id: str
     parking_name: str
