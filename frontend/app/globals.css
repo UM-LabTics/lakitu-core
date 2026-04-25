@@ -24,3 +24,38 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+/* 
+============================================================
+ESTILOS BASE
+Estilos globales para elementos HTML sin clases.
+============================================================ 
+*/
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  main {
+    @apply flex flex-col min-h-screen;
+  }
+
+  h1 {
+    @apply text-3xl md:text-4xl xl:text-5xl font-bold leading-tight py-2;
+  }
+
+  h2 {
+    @apply text-3xl lg:text-4xl font-semibold py-2;
+  }
+
+  h3 {
+    @apply text-2xl font-bold mb-4;
+  }
+
+  ul {
+    @apply list-inside list-disc;
+  }
+}
