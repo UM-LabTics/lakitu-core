@@ -14,6 +14,7 @@ export function useParkingSocket(parkingId: string) {
     let ws: WebSocket;
 
     function scheduleReconnect() {
+        console.warn(`WebSocket connection failed. Attempting to reconnect in ${Math.min(1000 * 2 ** attempts, 30_000) / 1000} seconds...`);
         const MAX_ATTEMPTS = 8;
         if (attempts >= MAX_ATTEMPTS) {
             setConnectionStatus("max-attempts-reached");
@@ -25,6 +26,7 @@ export function useParkingSocket(parkingId: string) {
     }
 
     function connect() {
+        console.log(`Attempting to connect to WebSocket${attempts > 0 ? ` (attempt ${attempts + 1})` : ""}...`);
         setConnectionStatus("connecting");
         ws = new WebSocket(
         `${process.env.NEXT_PUBLIC_WS_URL}/${parkingId}`
@@ -33,8 +35,15 @@ export function useParkingSocket(parkingId: string) {
         ws.onmessage = (e) => { 
             const data : ParkingState = JSON.parse(e.data);
             setLatestState(data) };
-        ws.onerror   = ()  => setConnectionStatus("error");
-        ws.onclose   = ()  => { setConnectionStatus("closed"); scheduleReconnect(); };
+        ws.onerror   = ()  => {
+            console.error("WebSocket error occurred.");
+            setConnectionStatus("error");
+        };
+        ws.onclose   = ()  => { 
+            console.log("WebSocket connection closed.");
+            setConnectionStatus("closed"); 
+            scheduleReconnect(); 
+        };
     }
 
     connect();
