@@ -1,0 +1,18 @@
+{
+  "name": "Lakitu Frontend",
+  "dockerComposeFile": "../../docker-compose.yml",
+  "service": "frontend",
+  "shutdownAction": "none",
+  "workspaceFolder": "/app",
+
+  "customizations": {
+		"vscode": {
+			"extensions": [
+			"dbaeumer.vscode-eslint",
+			"esbenp.prettier-vscode",
+			"bradlc.vscode-tailwindcss",
+			"ms-vscode.remote-containers"
+			]
+		}
+	}
+}
