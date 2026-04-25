@@ -13,6 +13,11 @@ services:
       NEXT_PUBLIC_WS_URL: "ws://localhost:8000/ws"
       NEXT_PUBLIC_API_URL: "http://localhost:8000"
       BACKEND_INTERNAL_URL: "http://backend:8000"
+      # ── Hot-reload fix ──────────────────────────
+      TURBOPACK_WATCH_POLL: "200" # fuerza a turbopack a usar polling, aunque al final usamos webpack, por las dudas
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "200"
     volumes:
       - ./frontend:/app  # hot-reload - react-scripts reinicia cuando detecta un guardado con cambios
       - /app/node_modules # evita que el volumen sobreescriba node_modules con el del host, que rompería el hot-reload
