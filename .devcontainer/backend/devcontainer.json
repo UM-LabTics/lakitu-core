@@ -1,7 +1,8 @@
 {
   "name": "Lakitu Backend",
-  "dockerComposeFile": "../docker-compose.yml",
+  "dockerComposeFile": "../../docker-compose.yml",
   "service": "backend",
+  "shutdownAction": "none",
   "workspaceFolder": "/app",
 
   "customizations": {
