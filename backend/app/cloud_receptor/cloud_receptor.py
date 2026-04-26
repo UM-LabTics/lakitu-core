@@ -8,6 +8,7 @@ from functools import partial
 from pathlib import Path
 from datetime import timezone
 
+#from app.business_logic.cloud_backend import CloudBackend
 from app.models import StateUpdateEvent
  
 import boto3
@@ -15,28 +16,11 @@ from botocore.exceptions import BotoCoreError, ClientError
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.settings import Settings
+
 logger = logging.getLogger(__name__)
 SNAPSHOT_DIR = Path("/tmp/parking_snapshots")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "production").lower()
-# ---------------------------------------------------------------------------
-# Configuracion — Pydantic lee valores de variables de entorno, pero nos quedamos solo con las que realmente necesitamos acá. 
-# En EC2, las credenciales de AWS van a venir a través de un rol IAM de la instancia, si se dejan en None boto3 entiende eso. 
-# ---------------------------------------------------------------------------
-
-class CloudReceptorSettings(BaseSettings):
-    model_config = SettingsConfigDict(
-        extra="ignore",          # ignorar las que no se definen acá abajo
-    )
-
-    aws_access_key_id: str | None = None
-    aws_secret_access_key: str | None = None
-    aws_default_region: str = "us-east-2"
-
-    sqs_queue_url: str
-    sqs_poll_interval_seconds: int = Field(default=2, ge=1)
-    sqs_max_messages: int = Field(default=10, ge=1, le=10)  # SQS hard-limit: 10
-
-    log_level: str = "INFO"
 
 # ---------------------------------------------------------------------------
 # CloudReceptor
@@ -47,7 +31,7 @@ class CloudReceptor:
     Hace polling de una queue SQS usando una task asincrona de asyncio.
 
     Uso: 
-        receptor = CloudReceptor(CloudReceptorSettings())
+        receptor = CloudReceptor(settings, cloud_backend)
 
          @asynccontextmanager
         async def lifespan(app: FastAPI):
@@ -58,8 +42,10 @@ class CloudReceptor:
         app = FastAPI(lifespan=lifespan)
     """
 
-    def __init__(self, settings: CloudReceptorSettings) -> None:
+    def __init__(self, settings: Settings#, cloud_backend: CloudBackend
+                 ) -> None:
         self.settings = settings
+        #self.cloud_backend = cloud_backend
         self._running = False
         self._task: asyncio.Task | None = None
 
@@ -197,8 +183,8 @@ class CloudReceptor:
         if ENVIRONMENT == "development":
             await self._save_snapshot(msg)
 
-        # --- UpdateState a Cloud Backend (TODO) ------------------------------
-        # cloud_backend.update_state(msg)
+        # --- UpdateState a Cloud Backend  ------------------------------------
+        #await self.cloud_backend.process_event(msg)
 
         # --- Done ------------------------------------------------------------
         await self._delete_message(receipt_handle, message_id)
