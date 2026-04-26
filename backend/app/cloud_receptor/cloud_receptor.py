@@ -198,7 +198,7 @@ class CloudReceptor:
             await self._save_snapshot(msg)
 
         # --- UpdateState a Cloud Backend (TODO) ------------------------------
-        # cloud_backend.update_state(msg)
+        # cloud_backend.process_event(msg)
 
         # --- Done ------------------------------------------------------------
         await self._delete_message(receipt_handle, message_id)

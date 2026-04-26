@@ -2,7 +2,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
-class SpotState(BaseModel):
+class RawSpotState(BaseModel):
     spot_id: str
     status: int = Field(..., ge=0, le=1)
     confidence: float = Field(..., ge=0.0, le=1.0)
@@ -18,7 +18,7 @@ class StateUpdateEvent(BaseModel):
     snapshot: str           # base64
     total_spots: int
     free_spots: int
-    spots: list[SpotState]
+    spots: list[RawSpotState]
 
     @property
     def occupied_spots(self) -> int:
@@ -29,3 +29,14 @@ class StateUpdateEvent(BaseModel):
         if self.total_spots == 0:
             return 0.0
         return round(self.occupied_spots / self.total_spots * 100, 1)
+    
+
+class SpotState(BaseModel):
+    spot_id: str
+    status: int = Field(..., ge=0, le=1)
+
+class ParkingLotState(BaseModel):
+    parking_id: str
+    parking_name: str
+    timestamp: datetime
+    spots: list[SpotState]
