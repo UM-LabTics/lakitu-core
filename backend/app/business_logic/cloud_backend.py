@@ -7,8 +7,6 @@ from datetime import timezone
 
 from app.models import ParkingLotState, SpotState, StateUpdateEvent
 
-from app.api.websockets.manager import ConnectionManager
-
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -22,12 +20,15 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "production").lower()
 class CloudBackend:
     """ Encapsula la lógica de interacción con Redis, redirecciona peticiones y delega la comunicación con RDS y S3 a persistence. """
 
-    def __init__(self, redis_client: redis.Redis, websocket_manager:ConnectionManager , #persistence
+    def __init__(self, redis_client: redis.Redis, #persistence
                  ):
         self.redis_client = redis_client
-        self.websocket_manager = websocket_manager
+        self._websocket_broadcast_method = None
         #self.persistence = persistence
 
+    def set_websocket_broadcast_method(self, method):
+        """ Permite inyectar el método de broadcast del websocket manager después de la construcción, para evitar dependencias circulares. """
+        self._websocket_broadcast_method = method
 
     async def _update_redis_state(self, state: ParkingLotState):
         """ Intenta actualizar el estado en Redis, si falla lo loguea pero no lanza excepción."""
@@ -56,7 +57,8 @@ class CloudBackend:
         )
 
         # Enviar el estado actualizado a través del websocket
-        await self.websocket_manager.broadcast(parking_lot_state.parking_id, parking_lot_state.model_dump(mode="json"))
+        if self._websocket_broadcast_method:
+            await self._websocket_broadcast_method(parking_lot_state.parking_id, parking_lot_state.model_dump(mode="json"))
 
         # Actualizar el estado en Redis.
         await self._update_redis_state(parking_lot_state)
