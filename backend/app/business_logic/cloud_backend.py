@@ -20,9 +20,11 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "production").lower()
 class CloudBackend:
     """ Encapsula la lógica de interacción con Redis, redirecciona peticiones y delega la comunicación con RDS y S3 a persistence. """
 
-    def __init__(self, redis_client: redis.Redis, persistence):
+    def __init__(self, redis_client: redis.Redis, 
+                 #persistence
+                 ):
         self.redis_client = redis_client
-        self.persistence = persistence
+        #self.persistence = persistence
 
 
     async def _update_redis_state(self, state: ParkingLotState):
@@ -55,4 +57,4 @@ class CloudBackend:
         await self._update_redis_state(parking_lot_state)
 
         # Delegar la persistencia a persistence.py, que se encargará de guardar en RDS y S3.
-        await self.persistence.save_state_update(event)
+        #await self.persistence.save_state_update(event)
