@@ -1,0 +1,18 @@
+===================
+Qué se prueba en este smoke test
+----------------------
+
+El script `backend/test_smoke.py` valida tres componentes básicos de la app:
+
+1. WebSocket
+   - Abre una conexión con `GET /ws/parking-1` usando `TestClient`.
+   - Esto comprueba que el endpoint WebSocket está disponible y acepta conexiones.
+
+2. Broadcast
+   - Llama al nuevo endpoint REST `POST /api/debug/broadcast` con un payload JSON.
+   - El endpoint usa `manager.broadcast()` para enviar un mensaje a todos los clientes conectados a `parking-1`.
+   - El test comprueba que el cliente WebSocket recibe el mensaje.
+
+3. REST
+   - Llama al endpoint existente `GET /api/events?from=2024-01-01&to=2024-01-02`.
+   - Verifica que devuelve un `200 OK` y un JSON válido con los campos `from`, `to` y `events`.
