@@ -6,7 +6,9 @@ import redis.asyncio as redis
 from datetime import timezone
 
 from app.models import ParkingLotState, SpotState, StateUpdateEvent
- 
+
+from app.api.websockets.manager import ConnectionManager
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -20,10 +22,10 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "production").lower()
 class CloudBackend:
     """ Encapsula la lógica de interacción con Redis, redirecciona peticiones y delega la comunicación con RDS y S3 a persistence. """
 
-    def __init__(self, redis_client: redis.Redis, 
-                 #persistence
+    def __init__(self, redis_client: redis.Redis, websocket_manager:ConnectionManager , #persistence
                  ):
         self.redis_client = redis_client
+        self.websocket_manager = websocket_manager
         #self.persistence = persistence
 
 
@@ -52,6 +54,9 @@ class CloudBackend:
             timestamp=event.timestamp.astimezone(timezone.utc),  # asegurarnos que esté en UTC
             spots=[SpotState(spot_id=spot.spot_id, status=spot.status) for spot in event.spots]
         )
+
+        # Enviar el estado actualizado a través del websocket
+        await self.websocket_manager.broadcast(parking_lot_state.parking_id, parking_lot_state.model_dump(mode="json"))
 
         # Actualizar el estado en Redis.
         await self._update_redis_state(parking_lot_state)
