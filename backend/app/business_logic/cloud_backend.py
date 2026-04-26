@@ -63,3 +63,16 @@ class CloudBackend:
 
         # Delegar la persistencia a persistence.py, que se encargará de guardar en RDS y S3.
         #await self.persistence.save_state_update(event)
+
+    async def get_current_state(self, parking_id: str) -> ParkingLotState | None:
+        """ Intenta obtener el estado actual de un parking lot desde Redis. Si falla, devuelve None.""" # Después hagamos que si falla intente con persistence en la DB
+        try:
+            key = f"parking_lot:{parking_id}:state"
+            state_json = await self.redis_client.get(key)
+            if state_json is None:
+                logger.info(f"No current state found in Redis for parking_id={parking_id}.")
+                return None
+            return ParkingLotState.model_validate_json(state_json)
+        except redis.RedisError as e:
+            logger.error(f"Failed to get current state from Redis for parking_id={parking_id}: {e}")
+            return None
