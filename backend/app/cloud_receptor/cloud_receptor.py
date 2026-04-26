@@ -15,6 +15,8 @@ from botocore.exceptions import BotoCoreError, ClientError
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.api.websockets.manager import manager
+
 logger = logging.getLogger(__name__)
 SNAPSHOT_DIR = Path("/tmp/parking_snapshots")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "production").lower()
@@ -32,7 +34,7 @@ class CloudReceptorSettings(BaseSettings):
     aws_secret_access_key: str | None = None
     aws_default_region: str = "us-east-2"
 
-    sqs_queue_url: str
+    sqs_queue_url: str | None = None
     sqs_poll_interval_seconds: int = Field(default=2, ge=1)
     sqs_max_messages: int = Field(default=10, ge=1, le=10)  # SQS hard-limit: 10
 
@@ -78,6 +80,11 @@ class CloudReceptor:
         if self._running:
             logger.warning("CloudReceptor.start() called while already running.")
             return
+
+        if not self.settings.sqs_queue_url:
+            logger.warning("CloudReceptor not starting: sqs_queue_url is not configured.")
+            return
+
         self._running = True
         self._task = asyncio.create_task(self._poll_loop(), name="sqs-poll-loop")
         logger.info(
@@ -197,8 +204,11 @@ class CloudReceptor:
         if ENVIRONMENT == "development":
             await self._save_snapshot(msg)
 
-        # --- UpdateState a Cloud Backend (TODO) ------------------------------
-        # cloud_backend.update_state(msg)
+        # --- Broadcast a clientes WebSocket ----------------------------------
+        await manager.broadcast(
+            msg.parking_id,
+            msg.model_dump(mode="json", exclude={"snapshot"})
+        )
 
         # --- Done ------------------------------------------------------------
         await self._delete_message(receipt_handle, message_id)
