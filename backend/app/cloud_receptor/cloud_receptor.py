@@ -17,6 +17,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.settings import Settings
+from app.business_logic.cloud_backend import CloudBackend
 
 logger = logging.getLogger(__name__)
 SNAPSHOT_DIR = Path("/tmp/parking_snapshots")
@@ -42,10 +43,10 @@ class CloudReceptor:
         app = FastAPI(lifespan=lifespan)
     """
 
-    def __init__(self, settings: Settings#, cloud_backend: CloudBackend
+    def __init__(self, settings: Settings, cloud_backend: CloudBackend
                  ) -> None:
         self.settings = settings
-        #self.cloud_backend = cloud_backend
+        self.cloud_backend = cloud_backend
         self._running = False
         self._task: asyncio.Task | None = None
 
@@ -184,7 +185,7 @@ class CloudReceptor:
             await self._save_snapshot(msg)
 
         # --- UpdateState a Cloud Backend  ------------------------------------
-        #await self.cloud_backend.process_event(msg)
+        await self.cloud_backend.process_event(msg)
 
         # --- Done ------------------------------------------------------------
         await self._delete_message(receipt_handle, message_id)
