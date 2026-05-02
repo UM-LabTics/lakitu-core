@@ -1,5 +1,26 @@
 # Script to create all tables in RDS and seed them with test data.
 
+# Matches mock_pi for now!!! Change it to match Pi after or create a new seed
+
+import asyncio
+import logging
+from datetime import datetime, timezone, timedelta
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import insert
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+from app.persistence.tables import metadata, parking_lot, spot, event, event_spot
+from app.settings import settings
+
+"""
+Script to create all tables in RDS and seed them with test data.
+Run from inside the backend container:
+
+    python -m app.persistence.seed
+
+Make sure your .env file is present and DATABASE_URL points to RDS before running.
+"""
+
 import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
@@ -17,74 +38,75 @@ logger = logging.getLogger(__name__)
 # ── Test data ────────────────────────────────────────────────────────────────
 
 PARKING_LOT = {
-    "id": "1",
-    "name": "Edificio Parque de Innovación LATU - Universidad de Montevideo",
-    "total_spots": 26,
+    "id": "mock-01",
+    "name": "Mock: Edificio Parque de Innovación LATU - Universidad de Montevideo",
+    "total_spots": 12,
 }
 
 SPOTS = [
-    {"id": str(i), "parking_id": "1"}
-    for i in range(1, 27)  # 1 through 26
+    {"id": f"spot_{i:02d}", "parking_id": "mock-01"}
+    for i in range(1, 13)  # spot_01 through spot_12
 ]
 
+
 def make_events():
-    """Generate realistic test events spread over the last 7 days."""
     now = datetime.now(timezone.utc)
     events = []
 
     def make_event(days_ago, hour, occupied_count):
         timestamp = now - timedelta(days=days_ago) + timedelta(hours=hour)
-        occupied = [str(i) for i in range(1, occupied_count + 1)]
-        free = [str(i) for i in range(occupied_count + 1, 27)]
+        # occupied_count out of 12 spots
+        occupied = [f"spot_{i:02d}" for i in range(1, occupied_count + 1)]
+        free     = [f"spot_{i:02d}" for i in range(occupied_count + 1, 13)]
         return {
             "timestamp": timestamp,
-            "free_spots": 26 - occupied_count,
+            "free_spots": 12 - occupied_count,
             "image_url": None,
             "spots": [
-                {"spot_id": s, "parking_id": "1", "new_state": 1}
+                {"spot_id": s, "parking_id": "mock-01", "new_state": 1}
                 for s in occupied
             ] + [
-                {"spot_id": s, "parking_id": "1", "new_state": 0}
+                {"spot_id": s, "parking_id": "mock-01", "new_state": 0}
                 for s in free
-            ]
+            ],
         }
 
     # 7 days ago
-    events.append(make_event(days_ago=7, hour=8,  occupied_count=20))
-    events.append(make_event(days_ago=7, hour=12, occupied_count=15))
-    events.append(make_event(days_ago=7, hour=16, occupied_count=22))
-    events.append(make_event(days_ago=7, hour=19, occupied_count=8))
-    events.append(make_event(days_ago=7, hour=21, occupied_count=4))
+    events.append(make_event(days_ago=7, hour=8,  occupied_count=10))  # morning 
+    events.append(make_event(days_ago=7, hour=12, occupied_count=8))   # midday
+    events.append(make_event(days_ago=7, hour=16, occupied_count=11))  # afternoon 
+    events.append(make_event(days_ago=7, hour=19, occupied_count=4))   # evening
+    events.append(make_event(days_ago=7, hour=21, occupied_count=2))   # night 
 
     # 5 days ago
-    events.append(make_event(days_ago=5, hour=8,  occupied_count=18))
-    events.append(make_event(days_ago=5, hour=13, occupied_count=14))
-    events.append(make_event(days_ago=5, hour=17, occupied_count=24))
-    events.append(make_event(days_ago=5, hour=20, occupied_count=6))
-    events.append(make_event(days_ago=5, hour=22, occupied_count=2))
+    events.append(make_event(days_ago=5, hour=8,  occupied_count=9))
+    events.append(make_event(days_ago=5, hour=13, occupied_count=7))
+    events.append(make_event(days_ago=5, hour=17, occupied_count=12))  
+    events.append(make_event(days_ago=5, hour=20, occupied_count=3))
+    events.append(make_event(days_ago=5, hour=22, occupied_count=1))   
 
     # 3 days ago
-    events.append(make_event(days_ago=3, hour=9,  occupied_count=16))
-    events.append(make_event(days_ago=3, hour=12, occupied_count=21))
-    events.append(make_event(days_ago=3, hour=15, occupied_count=19))
-    events.append(make_event(days_ago=3, hour=18, occupied_count=10))
-    events.append(make_event(days_ago=3, hour=21, occupied_count=3))
+    events.append(make_event(days_ago=3, hour=9,  occupied_count=8))
+    events.append(make_event(days_ago=3, hour=12, occupied_count=11))
+    events.append(make_event(days_ago=3, hour=15, occupied_count=10))
+    events.append(make_event(days_ago=3, hour=18, occupied_count=5))
+    events.append(make_event(days_ago=3, hour=21, occupied_count=2))
 
     # 2 days ago
-    events.append(make_event(days_ago=2, hour=8,  occupied_count=22))
-    events.append(make_event(days_ago=2, hour=11, occupied_count=17))
-    events.append(make_event(days_ago=2, hour=14, occupied_count=25))
-    events.append(make_event(days_ago=2, hour=17, occupied_count=13))
-    events.append(make_event(days_ago=2, hour=20, occupied_count=5))
-    events.append(make_event(days_ago=2, hour=22, occupied_count=2))
+    events.append(make_event(days_ago=2, hour=8,  occupied_count=11))
+    events.append(make_event(days_ago=2, hour=11, occupied_count=9))
+    events.append(make_event(days_ago=2, hour=14, occupied_count=12))  
+    events.append(make_event(days_ago=2, hour=17, occupied_count=7))
+    events.append(make_event(days_ago=2, hour=20, occupied_count=3))
+    events.append(make_event(days_ago=2, hour=22, occupied_count=1))
 
     # Yesterday
-    events.append(make_event(days_ago=1, hour=8,  occupied_count=19))
-    events.append(make_event(days_ago=1, hour=11, occupied_count=12))
-    events.append(make_event(days_ago=1, hour=14, occupied_count=23))
-    events.append(make_event(days_ago=1, hour=17, occupied_count=15))
-    events.append(make_event(days_ago=1, hour=20, occupied_count=7))
-    events.append(make_event(days_ago=1, hour=22, occupied_count=2))
+    events.append(make_event(days_ago=1, hour=8,  occupied_count=10))
+    events.append(make_event(days_ago=1, hour=11, occupied_count=6))
+    events.append(make_event(days_ago=1, hour=14, occupied_count=12))
+    events.append(make_event(days_ago=1, hour=17, occupied_count=8))
+    events.append(make_event(days_ago=1, hour=20, occupied_count=4))
+    events.append(make_event(days_ago=1, hour=22, occupied_count=1))
 
     return events
 
@@ -142,7 +164,7 @@ async def seed():
             logger.info(
                 "Inserted event %d at %s",
                 event_id,
-                ev_data["timestamp"].strftime("%Y-%m-%d %H:%M UTC")
+                ev_data["timestamp"].strftime("%Y-%m-%d %H:%M UTC"),
             )
 
     await engine.dispose()

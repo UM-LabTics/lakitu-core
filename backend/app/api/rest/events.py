@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
 from datetime import date
-
 from app.api.websockets.manager import manager
+from app.persistence.instance import persistence
 
 router = APIRouter(prefix="/api")
 
@@ -23,17 +23,21 @@ async def debug_broadcast(payload: BroadcastRequest):
 
 @router.get("/events")
 async def get_events(
+    parking_id: str = Query(...),
     from_date: date = Query(..., alias="from"),
     to_date: date = Query(..., alias="to"),
+    limit: int = Query(default=20),
+    page: int = Query(default=1),
 ):
     if from_date > to_date:
         raise HTTPException(status_code=422, detail="'from' must be before 'to'")
 
-    # TODO: llamar a persistence cuando esté listo
-    # events = await persistence.get_events(from_date, to_date)
+    result = await persistence.get_events(
+        parking_id=parking_id,
+        from_date=from_date,
+        to_date=to_date,
+        limit=limit,
+        page=page,
+    )
+    return result
 
-    return {
-        "from": from_date.isoformat(),
-        "to": to_date.isoformat(),
-        "events": [] 
-    }

@@ -10,6 +10,8 @@ from app.models import ParkingLotState, SpotState, StateUpdateEvent
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.persistence import persistence
+
 logger = logging.getLogger(__name__)
 ENVIRONMENT = os.getenv("ENVIRONMENT", "production").lower()
 
@@ -20,11 +22,10 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "production").lower()
 class CloudBackend:
     """ Encapsula la lógica de interacción con Redis, redirecciona peticiones y delega la comunicación con RDS y S3 a persistence. """
 
-    def __init__(self, redis_client: redis.Redis, #persistence
-                 ):
+    def __init__(self, redis_client: redis.Redis, persistence):
         self.redis_client = redis_client
         self._websocket_broadcast_method = None
-        #self.persistence = persistence
+        self.persistence = persistence
 
     def set_websocket_broadcast_method(self, method):
         """ Permite inyectar el método de broadcast del websocket manager después de la construcción, para evitar dependencias circulares. """
@@ -64,7 +65,7 @@ class CloudBackend:
         await self._update_redis_state(parking_lot_state)
 
         # Delegar la persistencia a persistence.py, que se encargará de guardar en RDS y S3.
-        #await self.persistence.save_state_update(event)
+        await self.persistence.save_event(event)
 
     async def get_current_state(self, parking_id: str) -> ParkingLotState | None:
         """ Intenta obtener el estado actual de un parking lot desde Redis. Si falla, devuelve None.""" # Después hagamos que si falla intente con persistence en la DB
