@@ -1,5 +1,6 @@
 import logging
 from datetime import date, datetime, timezone
+from typing import Optional
 
 from sqlalchemy import insert, select, and_, func
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -54,29 +55,109 @@ class Persistence:
             logger.error(f"Failed to save event: {e}")
             return None
 
-    async def get_events(
+    async def _get_spot_ids(self, conn, parking_id: str) -> list[str]:
+        """Returns all spot IDs for a parking lot."""
+        rows = await conn.execute(
+            select(spot.c.id).where(spot.c.parking_id == parking_id)
+        )
+        return [r[0] for r in rows]
+
+    async def _get_state_at(self, conn, parking_id: str, moment: datetime) -> dict[str, int]:
+        """
+        For each spot in the parking lot, finds its most recent state
+        at or before the given moment. Returns a dict of {spot_id: status}.
+        Spots with no record before the moment are assumed free (0).
+        """
+        spot_ids = await self._get_spot_ids(conn, parking_id)
+        state = {spot_id: 0 for spot_id in spot_ids}  # default all free
+
+        for spot_id in spot_ids:
+            # Find the most recent event_spot for this spot at or before moment
+            row = await conn.execute(
+                select(event_spot.c.new_state)
+                .join(event, event.c.id == event_spot.c.event_id)
+                .where(
+                    and_(
+                        event_spot.c.spot_id == spot_id,
+                        event_spot.c.parking_id == parking_id,
+                        event.c.timestamp <= moment,
+                    )
+                )
+                .order_by(event.c.timestamp.desc())
+                .limit(1)
+            )
+            result = row.scalar_one_or_none()
+            if result is not None:
+                state[spot_id] = result
+
+        return state
+
+    def _build_state_snapshot(
         self,
         parking_id: str,
-        from_date: date,
-        to_date: date,
+        timestamp: datetime,
+        free_spots: int,
+        image_url: Optional[str],
+        state: dict[str, int],
+    ) -> dict:
+        """Builds the response dict for a single state snapshot."""
+        return {
+            "pi_timestamp": timestamp.isoformat(),
+            "free_spots": free_spots,
+            "image_url": image_url,
+            "spots": [
+                {"spot_id": spot_id, "status": status}
+                for spot_id, status in state.items()
+            ],
+        }
+
+    async def get_state_at(
+        self,
+        parking_id: str,
+        moment: datetime,
+    ) -> dict:
+        """
+        Returns the full reconstructed state of the parking lot
+        at a single moment in time.
+        """
+        try:
+            async with self.engine.connect() as conn:
+                state = await self._get_state_at(conn, parking_id, moment)
+                free = sum(1 for s in state.values() if s == 0)
+                return self._build_state_snapshot(
+                    parking_id=parking_id,
+                    timestamp=moment,
+                    free_spots=free,
+                    image_url=None,
+                    state=state,
+                )
+        except Exception as e:
+            logger.error(f"Failed to get state at {moment}: {e}")
+            return {}
+
+    async def get_states_between(
+        self,
+        parking_id: str,
+        from_dt: datetime,
+        to_dt: datetime,
         limit: int = 20,
         page: int = 1,
     ) -> dict:
         """
-        Returns historical events between from_date and to_date for a parking lot.
-        Joins through event_spot to filter by parking_id.
+        Returns the reconstructed full state of the parking lot
+        at each event timestamp between from_dt and to_dt.
+        Starts from the base state at from_dt and applies changes forward.
         """
-        from_dt = datetime(from_date.year, from_date.month, from_date.day, tzinfo=timezone.utc)
-        to_dt = datetime(to_date.year, to_date.month, to_date.day, 23, 59, 59, tzinfo=timezone.utc)
         offset = (page - 1) * limit
 
         try:
             async with self.engine.connect() as conn:
-                # We filter by parking_id through event_spot
-                # First get the event ids that belong to this parking lot
-                # within the date range
-                event_ids_query = (
-                    select(event.c.id)
+                # Step 1: get base state at from_dt
+                running_state = await self._get_state_at(conn, parking_id, from_dt)
+
+                # Step 2: get all events in range
+                event_rows = await conn.execute(
+                    select(event)
                     .join(event_spot, event.c.id == event_spot.c.event_id)
                     .where(
                         and_(
@@ -86,47 +167,47 @@ class Persistence:
                         )
                     )
                     .distinct()
+                    .order_by(event.c.timestamp.asc())
                 )
+                all_events = event_rows.mappings().all()
+                total = len(all_events)
 
-                # Count total matching events
-                count_result = await conn.execute(
-                    select(func.count()).select_from(
-                        event_ids_query.subquery()
-                    )
-                )
-                total = count_result.scalar_one()
+                # Step 3: paginate
+                paginated_events = all_events[offset: offset + limit]
 
-                # Fetch the paginated events
-                rows = await conn.execute(
-                    select(event)
-                    .where(event.c.id.in_(event_ids_query))
-                    .order_by(event.c.timestamp.desc())
-                    .limit(limit)
-                    .offset(offset)
-                )
-                events_rows = rows.mappings().all()
-
-                # For each event, fetch its spots
-                result = []
-                for ev in events_rows:
-                    spots_rows = await conn.execute(
+                # Step 4: for each event, apply its changes and build snapshot
+                snapshots = []
+                for ev in paginated_events:
+                    # Get what changed in this event
+                    changed_rows = await conn.execute(
                         select(event_spot.c.spot_id, event_spot.c.new_state)
-                        .where(event_spot.c.event_id == ev["id"])
+                        .where(
+                            and_(
+                                event_spot.c.event_id == ev["id"],
+                                event_spot.c.parking_id == parking_id,
+                            )
+                        )
                     )
-                    spots_data = spots_rows.mappings().all()
-                    result.append({
-                        "id": ev["id"],
-                        "pi_timestamp": ev["timestamp"].isoformat(),
-                        "free_spots": ev["free_spots"],
-                        "image_url": ev["image_url"],
-                        "spots": [
-                            {"spot_id": s["spot_id"], "status": s["new_state"]}
-                            for s in spots_data
-                        ],
-                    })
+                    changes = changed_rows.mappings().all()
 
-                return {"total_events": total, "events": result}
+                    # Apply changes to running state
+                    for change in changes:
+                        running_state[change["spot_id"]] = change["new_state"]
+
+                    free = sum(1 for s in running_state.values() if s == 0)
+
+                    snapshots.append(
+                        self._build_state_snapshot(
+                            parking_id=parking_id,
+                            timestamp=ev["timestamp"],
+                            free_spots=free,
+                            image_url=ev["image_url"],
+                            state=dict(running_state),
+                        )
+                    )
+
+                return {"total_states": total, "states": snapshots}
 
         except Exception as e:
-            logger.error(f"Failed to get events: {e}")
-            return {"total_events": 0, "events": []}
+            logger.error(f"Failed to get states between {from_dt} and {to_dt}: {e}")
+            return {"total_states": 0, "states": []}
