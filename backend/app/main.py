@@ -13,6 +13,8 @@ from app.cloud_receptor.cloud_receptor import CloudReceptor
 from app.settings import settings
 
 from app.api.rest.events import router as rest_router 
+from app.api.rest.auth import router as auth_router
+
 from app.api.websockets.endpoints import router as ws_router
 from app.api.websockets.manager import manager as websocket_manager
 
@@ -63,3 +65,4 @@ app.add_middleware(
 )
 app.include_router(ws_router)
 app.include_router(rest_router)
+app.include_router(auth_router)
