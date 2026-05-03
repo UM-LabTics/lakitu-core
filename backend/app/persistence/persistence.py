@@ -2,11 +2,16 @@ import logging
 from datetime import date, datetime, timezone
 from typing import Optional
 
-from sqlalchemy import insert, select, and_, func
+from sqlalchemy import insert, select, and_, func, update
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.models import StateUpdateEvent
 from app.persistence.tables import event, event_spot, spot, parking_lot
+
+import asyncio
+import base64
+import boto3
+from app.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +19,36 @@ logger = logging.getLogger(__name__)
 class Persistence:
     def __init__(self, engine: AsyncEngine):
         self.engine = engine
+
+    async def _upload_snapshot_to_s3(self, event_id: int, snapshot_b64: str) -> str | None:
+        """Uploads base64 snapshot to S3, returns the S3 key or None if it fails."""
+        try:
+            loop = asyncio.get_running_loop()
+            image_bytes = base64.b64decode(snapshot_b64)
+            s3_key = f"events/{event_id}/photo.jpg"
+
+            s3 = boto3.client(
+                "s3",
+                region_name=settings.aws_default_region,
+                aws_access_key_id=settings.aws_access_key_id,
+                aws_secret_access_key=settings.aws_secret_access_key,
+            )
+
+            await loop.run_in_executor(
+                None,
+                lambda: s3.put_object(
+                    Bucket=settings.s3_bucket_name,
+                    Key=s3_key,
+                    Body=image_bytes,
+                    ContentType="image/jpeg",
+                )
+            )
+            logger.info(f"Uploaded snapshot to S3: {s3_key}")
+            return s3_key
+
+        except Exception as e:
+            logger.error(f"Failed to upload snapshot to S3: {e}")
+            return None
 
     async def save_event(self, state_update: StateUpdateEvent) -> int | None:
         """
@@ -29,10 +64,21 @@ class Persistence:
                     insert(event).values(
                         timestamp=state_update.timestamp.astimezone(timezone.utc),
                         free_spots=state_update.free_spots,
-                        image_url=None,  # S3 comes later
+                        image_url=None,  # we insert it as None at first and then update it after the s3 upload so if it fails, the event row still gets saver to the db
                     ).returning(event.c.id)
                 )
                 event_id = result.scalar_one()
+
+                # Upload snapshot to S3 and update image_url
+                image_url = None
+                if state_update.snapshot:
+                    image_url = await self._upload_snapshot_to_s3(event_id, state_update.snapshot)
+                    if image_url:
+                        await conn.execute(
+                            event.update()
+                            .where(event.c.id == event_id)
+                            .values(image_url=image_url)
+                        )
 
                 # Insert one event_spot row per spot that changed
                 await conn.execute(
@@ -46,10 +92,7 @@ class Persistence:
                         }
                         for s in state_update.spots
                     ]
-                )
-
-                logger.info(f"Saved event {event_id} for parking {state_update.parking_id}")
-                return event_id
+)
 
         except Exception as e:
             logger.error(f"Failed to save event: {e}")
