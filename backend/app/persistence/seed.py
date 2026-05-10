@@ -118,6 +118,8 @@ async def seed():
     engine = create_async_engine(settings.database_url, echo=False)
 
     async with engine.begin() as conn:
+        #logger.info("Dropping all tables...")
+        #await conn.run_sync(metadata.drop_all)
         logger.info("Creating tables...")
         await conn.run_sync(metadata.create_all)
         logger.info("Tables created successfully.")

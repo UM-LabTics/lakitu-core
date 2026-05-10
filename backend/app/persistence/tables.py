@@ -1,6 +1,6 @@
 from sqlalchemy import (
     MetaData, Table, Column,
-    Integer, String, DateTime, ForeignKey, Text
+    Integer, String, DateTime, ForeignKey, Text, ForeignKeyConstraint
 )
 
 metadata = MetaData()
@@ -15,7 +15,7 @@ parking_lot = Table(
 spot = Table(
     "spot", metadata,
     Column("id", String, primary_key=True),
-    Column("parking_id", String, ForeignKey("parking_lot.id"), nullable=False),
+    Column("parking_id", String, ForeignKey("parking_lot.id"), primary_key=True, nullable=False),
 )
 
 event = Table(
@@ -29,7 +29,12 @@ event = Table(
 event_spot = Table(
     "event_spot", metadata,
     Column("event_id", Integer, ForeignKey("event.id"), primary_key=True),
-    Column("spot_id", String, ForeignKey("spot.id"), primary_key=True),
+    Column("spot_id", String, primary_key=True),
     Column("parking_id", String, ForeignKey("parking_lot.id"), primary_key=True),
     Column("new_state", Integer, nullable=False),
+    # Composite fk referencing spots composite primary key
+    ForeignKeyConstraint(
+        ["spot_id", "parking_id"],
+        ["spot.id", "spot.parking_id"]
+    )
 )
