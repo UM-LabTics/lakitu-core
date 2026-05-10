@@ -4,7 +4,7 @@ import { useState } from "react";
 
 interface ParkingSpot {
   spot_id: string;
-  status: 0 | 1;
+  status: -1 | 0 | 1;
 }
 
 interface ParkingStateSnapshot {
@@ -63,10 +63,12 @@ export default function PastQueries() {
   function renderSpots(spots: ParkingSpot[]) {
     const free = spots.filter((s) => s.status === 0).map((s) => s.spot_id).join(", ");
     const occupied = spots.filter((s) => s.status === 1).map((s) => s.spot_id).join(", ");
+    const unknown = spots.filter((s) => s.status === -1).map((s)=> s.spot_id).join(", ");
     return (
       <>
         <p>Free: {free || "none"}</p>
         <p>Occupied: {occupied || "none"}</p>
+        {unknown && <p>No data: {unknown}</p>}
       </>
     );
   }

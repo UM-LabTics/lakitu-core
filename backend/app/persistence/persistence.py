@@ -112,7 +112,7 @@ class Persistence:
         Spots with no record before the moment are assumed free (0).
         """
         spot_ids = await self._get_spot_ids(conn, parking_id)
-        state = {spot_id: 0 for spot_id in spot_ids}  # default all free
+        state = {spot_id: -1 for spot_id in spot_ids}  # -1 for the spots with no data
 
         for spot_id in spot_ids:
             # Find the most recent event_spot for this spot at or before moment
