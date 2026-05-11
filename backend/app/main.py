@@ -9,12 +9,13 @@ from redis.asyncio import Redis
 
 from app.business_logic.cloud_backend import CloudBackend
 from app.cloud_receptor.cloud_receptor import CloudReceptor
-#from app.persistence.persistence import Persistence
+from app.persistence.instance import persistence
 from app.settings import settings
 
 from app.api.rest.events import router as rest_router 
 from app.api.websockets.endpoints import router as ws_router
 from app.api.websockets.manager import manager as websocket_manager
+
 
 def setup_logging() -> None:
     logging.basicConfig(
@@ -37,11 +38,8 @@ async def lifespan(app: FastAPI):
     await redis_client.ping() # El IDE me marca error porque no reconoce que ping es async... espero que sea eso
 
     # Construir cadena de dependencias
-    #persistence = Persistence(...)
-    cloud_backend = CloudBackend(redis_client#, persistence
-                                 )
+    cloud_backend = CloudBackend(redis_client, persistence)
     cloud_receptor = CloudReceptor(settings, cloud_backend)
-
     cloud_backend.set_websocket_broadcast_method(websocket_manager.broadcast)
 
     # Empezar el polling de SQS
