@@ -284,3 +284,32 @@ class Persistence:
         except Exception as e:
             logger.error(f"Failed to get user by email: {e}")
             return None
+        
+    async def update_password(self, user_id: int, new_hashed_password: str) -> bool:
+        """Updates a user's password. Returns True if successful."""
+        try:
+            async with self.engine.begin() as conn:
+                await conn.execute(
+                    update(user)
+                    .where(user.c.id == user_id)
+                    .values(hashed_password=new_hashed_password)
+                )
+                return True
+        except Exception as e:
+            logger.error(f"Failed to update password for user {user_id}: {e}")
+            return False
+        
+    async def update_name(self, user_id: int, new_name: str) -> bool:
+        """Updates a user's name. Returns True if successful."""
+        try:
+            async with self.engine.begin() as conn:
+                await conn.execute(
+                    update(user)
+                    .where(user.c.id == user_id)
+                    .values(name=new_name)
+                )
+                return True
+        except Exception as e:
+            logger.error(f"Failed to update name for user {user_id}: {e}")
+            return False
+    
