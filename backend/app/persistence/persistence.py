@@ -271,3 +271,16 @@ class Persistence:
         except Exception as e:
             logger.error(f"Failed to add user: {e}")
             return None
+        
+    async def get_user_by_email(self, email: str) -> dict | None:
+        """Fetches a user by email. Returns a dict with user data or None if not found."""
+        try:
+            async with self.engine.connect() as conn:
+                result = await conn.execute(
+                    select(user).where(user.c.email == email)
+                )
+                row = result.mappings().first()
+                return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Failed to get user by email: {e}")
+            return None
