@@ -6,7 +6,7 @@ from sqlalchemy import insert, select, and_, func, update
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.models import StateUpdateEvent
-from app.persistence.tables import event, event_spot, spot, parking_lot
+from app.persistence.tables import event, event_spot, spot, parking_lot, user, has_access
 
 import asyncio
 import base64
@@ -64,7 +64,7 @@ class Persistence:
                     insert(event).values(
                         timestamp=state_update.timestamp.astimezone(timezone.utc),
                         free_spots=state_update.free_spots,
-                        image_url=None,  # we insert it as None at first and then update it after the s3 upload so if it fails, the event row still gets saver to the db
+                        image_url=None,  # we insert it as None at first and then update it after the s3 upload so if it fails, the event row still gets saved to the db
                     ).returning(event.c.id)
                 )
                 event_id = result.scalar_one()
@@ -254,3 +254,20 @@ class Persistence:
         except Exception as e:
             logger.error(f"Failed to get states between {from_dt} and {to_dt}: {e}")
             return {"total_states": 0, "states": []}
+        
+    async def add_user(self, email: str, hashed_password: str, name: str) -> int | None:
+        """Adds a new user to the database. Returns the new user ID or None if it fails."""
+        try:
+            async with self.engine.begin() as conn:
+                result = await conn.execute(
+                    insert(user).values(
+                        email=email,
+                        hashed_password=hashed_password,
+                        name=name
+                    ).returning(user.c.id)
+                )
+                user_id = result.scalar_one()
+                return user_id
+        except Exception as e:
+            logger.error(f"Failed to add user: {e}")
+            return None
