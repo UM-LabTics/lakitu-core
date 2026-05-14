@@ -313,3 +313,49 @@ class Persistence:
             logger.error(f"Failed to update name for user {user_id}: {e}")
             return False
     
+    async def grant_access(self, user_id: int, parking_id: str) -> bool:
+        """Grants a user access to a parking lot. Returns True if successful."""
+        try:
+            async with self.engine.begin() as conn:
+                await conn.execute(
+                    insert(has_access).values(
+                        user_id=user_id,
+                        parking_id=parking_id
+                    )
+                )
+                return True
+        except Exception as e:
+            logger.error(f"Failed to grant access for user {user_id} to parking {parking_id}: {e}")
+            return False
+        
+    async def check_access(self, user_id: int, parking_id: str) -> bool:
+        """Checks if a user has access to a parking lot. Returns True if they do."""
+        try:
+            async with self.engine.connect() as conn:
+                result = await conn.execute(
+                    select(func.count())
+                    .select_from(has_access)
+                    .where(
+                        and_(
+                            has_access.c.user_id == user_id,
+                            has_access.c.parking_id == parking_id
+                        )
+                    )
+                )
+                return result.scalar_one() > 0
+        except Exception as e:
+            logger.error(f"Failed to check access for user {user_id} to parking {parking_id}: {e}")
+            return False
+    
+    async def list_user_parking_access(self, user_id: int) -> list[str]:
+        """Lists all parking lot IDs that a user has access to."""
+        try:
+            async with self.engine.connect() as conn:
+                result = await conn.execute(
+                    select(has_access.c.parking_id)
+                    .where(has_access.c.user_id == user_id)
+                )
+                return [row[0] for row in result]
+        except Exception as e:
+            logger.error(f"Failed to list parking access for user {user_id}: {e}")
+            return []
