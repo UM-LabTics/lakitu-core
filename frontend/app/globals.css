@@ -1,29 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
-
+/* 
+============================================================
+VARIABLES DE DISEÑO
+============================================================ 
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Colors */
+  --background:           #F0EEE9;
+  --primary:              #123547;
+  --primary-light:        #2D5A70;
+  --primary-super-light:  #C6D2DC;
+  --secondary:            #88D498;
+  --secondary-light:      #92D77A;
+  --secondary-dark:       #18794F;
+  --crema:                #F3E9D2;
+  --occupied:             #852525;
+  --on-occupied:          #E09595;
+  --mid-range-yellow:     #F8EEB4;
+
+  /* Border radius */
+  --radius-xl:  25px;
+  --radius-lg:  15px;
+  --radius-md:  10px;
+  --radius-sm:  5px;
 }
 
+/* 
+============================================================
+THEME — variables como Tailwind utilities
+============================================================ 
+*/
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Colors */
+  --color-background:          var(--background);
+  --color-primary:             var(--primary);
+  --color-primary-light:       var(--primary-light);
+  --color-primary-super-light: var(--primary-super-light);
+  --color-secondary:           var(--secondary);
+  --color-secondary-light:     var(--secondary-light);
+  --color-secondary-dark:      var(--secondary-dark);
+  --color-crema:               var(--crema);
+  --color-occupied:            var(--occupied);
+  --color-on-occupied:         var(--on-occupied);
+  --color-mid-range-yellow:    var(--mid-range-yellow);
+
+  /* Border radius */
+  --radius-xl: var(--radius-xl);
+  --radius-lg: var(--radius-lg);
+  --radius-md: var(--radius-md);
+  --radius-sm: var(--radius-sm);
+
+  /* Fonts */
+  --font-sans: 'Fredoka', sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
 /* 
 ============================================================
 ESTILOS BASE
@@ -36,7 +67,8 @@ Estilos globales para elementos HTML sin clases.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-primary;
+    font-family: var(--font-sans);
   }
 
   main {
@@ -57,5 +89,103 @@ Estilos globales para elementos HTML sin clases.
 
   ul {
     @apply list-inside list-disc;
+  }
+}
+
+/* 
+============================================================
+COMPONENTES
+Clases reutilizables para componentes comunes.
+============================================================ 
+*/
+@layer components {
+ 
+  /* ----------------------------------------------------------
+   * BUTTONS
+   * ---------------------------------------------------------- */
+ 
+  /* Filled button */
+  .btn-contained {
+    @apply inline-flex items-center justify-center gap-2
+           px-5 py-2 font-semibold cursor-pointer select-none
+           transition-all duration-200 ease-in-out
+           bg-primary text-secondary;
+    border-radius: var(--radius-lg);
+  }
+  .btn-contained:hover {
+    @apply bg-primary-light text-secondary-light scale-105;
+  }
+ 
+  /* Text/ghost button */
+  .btn-text {
+    @apply inline-flex items-center justify-center gap-2
+           px-5 py-2 font-semibold cursor-pointer select-none
+           transition-all duration-200 ease-in-out
+           bg-transparent text-secondary;
+    border-radius: var(--radius-lg);
+  }
+  .btn-text:hover {
+    @apply bg-transparent text-secondary-light scale-105;
+  }
+ 
+  /* Admin button — flipped colors */
+  .admin-btn {
+    @apply inline-flex items-center justify-center gap-2
+           px-5 py-2 font-semibold cursor-pointer select-none
+           transition-all duration-200 ease-in-out
+           bg-secondary text-primary;
+    border-radius: var(--radius-lg);
+  }
+  .admin-btn:hover {
+    @apply bg-secondary-light text-primary-light scale-105;
+  }
+ 
+  /* ----------------------------------------------------------
+   * CARDS
+   * ---------------------------------------------------------- */
+
+  .card {
+    @apply p-6;
+    background-color: var(--crema);
+    border-radius: var(--radius-xl);
+    box-shadow: 0px 5px 10px 5px rgba(0, 0, 0, 0.25);
+  }
+
+  .card-light {
+    @apply p-6;
+    background-color: var(--primary-super-light);
+    border-radius: var(--radius-xl);
+    border: 3px solid var(--primary-light);
+    box-shadow: 0px 5px 10px 5px rgba(0, 0, 0, 0.25);
+  }
+
+  .card-dark {
+    @apply p-6 text-primary-super-light;
+    background-color: var(--primary-light);
+    border-radius: var(--radius-xl);
+    border: 3px solid var(--primary-super-light);
+    box-shadow: 0px 5px 10px 5px rgba(0, 0, 0, 0.25);
+  }
+
+  /* ----------------------------------------------------------
+   * INPUTS
+   * ---------------------------------------------------------- */
+
+  .input {
+    @apply px-4 py-2 w-full
+           text-primary
+           outline-none
+           transition-colors duration-150;
+    background-color: var(--background);
+    border: 2px solid var(--primary-light);
+    border-radius: var(--radius-md);
+  }
+
+  .input:focus {
+    border-color: var(--primary);
+  }
+
+  .input::placeholder {
+    @apply text-black/50;
   }
 }
