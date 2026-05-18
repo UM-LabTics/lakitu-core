@@ -67,7 +67,7 @@ Estilos globales para elementos HTML sin clases.
   }
 
   body {
-    @apply bg-background text-primary;
+    @apply bg-background text-primary-light;
     font-family: var(--font-sans);
   }
 
@@ -76,15 +76,15 @@ Estilos globales para elementos HTML sin clases.
   }
 
   h1 {
-    @apply text-3xl md:text-4xl xl:text-5xl font-bold leading-tight py-2;
+    @apply text-primary text-3xl md:text-4xl xl:text-5xl font-bold leading-tight py-2;
   }
 
   h2 {
-    @apply text-3xl lg:text-4xl font-semibold py-2;
+    @apply text-primary text-3xl lg:text-4xl font-semibold py-2;
   }
 
   h3 {
-    @apply text-2xl font-bold mb-4;
+    @apply text-primary text-2xl font-semibold mb-4;
   }
 
   ul {
@@ -107,7 +107,7 @@ Clases reutilizables para componentes comunes.
   /* Filled button */
   .btn-contained {
     @apply inline-flex items-center justify-center gap-2
-           px-5 py-2 font-semibold cursor-pointer select-none
+           px-5 py-2 text-xl font-medium cursor-pointer select-none
            transition-all duration-200 ease-in-out
            bg-primary text-secondary;
     border-radius: var(--radius-lg);
@@ -119,19 +119,19 @@ Clases reutilizables para componentes comunes.
   /* Text/ghost button */
   .btn-text {
     @apply inline-flex items-center justify-center gap-2
-           px-5 py-2 font-semibold cursor-pointer select-none
+           px-5 py-2 text-xl font-medium cursor-pointer select-none
            transition-all duration-200 ease-in-out
-           bg-transparent text-secondary;
+           bg-transparent text-secondary-dark;
     border-radius: var(--radius-lg);
   }
   .btn-text:hover {
-    @apply bg-transparent text-secondary-light scale-105;
+    @apply bg-transparent text-secondary scale-105;
   }
  
   /* Admin button — flipped colors */
   .admin-btn {
     @apply inline-flex items-center justify-center gap-2
-           px-5 py-2 font-semibold cursor-pointer select-none
+           px-5 py-2 text-xl font-medium cursor-pointer select-none
            transition-all duration-200 ease-in-out
            bg-secondary text-primary;
     border-radius: var(--radius-lg);
@@ -174,11 +174,12 @@ Clases reutilizables para componentes comunes.
   .input {
     @apply px-4 py-2 w-full
            text-primary
+           text-xl
            outline-none
            transition-colors duration-150;
     background-color: var(--background);
     border: 2px solid var(--primary-light);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
   }
 
   .input:focus {
@@ -188,4 +189,30 @@ Clases reutilizables para componentes comunes.
   .input::placeholder {
     @apply text-black/50;
   }
+
+  input[type='date']::-webkit-calendar-picker-indicator {
+      background: transparent;
+      bottom: 0;
+      color: transparent;
+      cursor: pointer;
+      height: auto;
+      left: 0;
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: auto;
+  }
+    input[type='time']::-webkit-calendar-picker-indicator {
+      background: transparent;
+      bottom: 0;
+      color: transparent;
+      cursor: pointer;
+      height: auto;
+      left: 0;
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: auto;
+  }
+
 }
