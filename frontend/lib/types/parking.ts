@@ -1,5 +1,5 @@
 type ParkingMessageType = "STATE_UPDATE" | "INITIAL_STATE";
-type SpotStatus = 0 | 1;
+type SpotStatus = -1 | 0 | 1;
 
 interface ParkingSpot {
   spot_id: string;
@@ -14,4 +14,16 @@ interface ParkingState {
   spots: ParkingSpot[];
 }
 
-export type { ParkingState };
+interface ParkingStateSnapshot {
+  pi_timestamp: string;
+  free_spots: number;
+  image_url: string | null;
+  spots: ParkingSpot[];
+}
+
+interface StatesResponse {
+  total_states: number;
+  states: ParkingStateSnapshot[];
+}
+
+export type { ParkingState, ParkingSpot, ParkingStateSnapshot, StatesResponse };
