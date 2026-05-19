@@ -7,11 +7,18 @@ import Input from "@/components/Input";
 
 export default function PastQueries() {
   const [fromDate, setFromDate] = useState("");
+  const [fromTime, setFromTime] = useState("00:00");
   const [toDate, setToDate] = useState("");
+  const [toTime, setToTime] = useState("23:59");
   const [results, setResults] = useState<StatesResponse | null>(null);
   const [singleState, setSingleState] = useState<ParkingStateSnapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // combine date and time into ISO string for the API
+  function buildDatetime(date: string, time: string): string {
+    return `${date}T${time}:00`;
+  }
 
   async function handleSearch() {
     if (!fromDate) {
@@ -25,12 +32,16 @@ export default function PastQueries() {
 
     try {
     if (!toDate) {
-      const data = await getStateAt("mock-01", fromDate);
+      const data = await getStateAt("mock-01", buildDatetime(fromDate, fromTime));
       setSingleState(data as ParkingStateSnapshot);
     } else {
-      const data = await getStatesBetween("mock-01", fromDate, toDate);
+      const data = await getStatesBetween(
+        "mock-01",
+        buildDatetime(fromDate, fromTime),
+        buildDatetime(toDate, toTime)
+      );
       setResults(data as StatesResponse);
-    }
+}
   } catch (err) {
     setError("Failed to fetch events. Is the backend running?");
   } finally {
@@ -63,6 +74,11 @@ export default function PastQueries() {
           value={fromDate}
           onChange={(value) => setFromDate(value)}
         />
+        <Input
+          variant="time"
+          value={fromTime}
+          onChange={(value) => setFromTime(value)}
+        />
     </div>
     <div>
       <p>To (optional):</p>
@@ -70,6 +86,11 @@ export default function PastQueries() {
         variant="date"
         value={toDate}
         onChange={(value) => setToDate(value)}
+      />
+      <Input
+        variant="time"
+        value={toTime}
+        onChange={(value) => setToTime(value)}
       />
     </div>
     <button onClick={handleSearch} disabled={loading}>
