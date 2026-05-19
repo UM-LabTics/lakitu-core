@@ -1,6 +1,11 @@
-# Script to create all tables in RDS and seed them with test data.
+"""
+Seed script for Mock Pi
+Run from inside the backend container:
 
-# Matches mock_pi for now!!! Change it to match Pi after or create a new seed
+    python -m app.persistence.seed_mock
+
+Make sure the .env file is present and DATABASE_URL points to RDS before running.
+"""
 
 import asyncio
 import logging
@@ -119,8 +124,8 @@ async def seed():
     engine = create_async_engine(settings.database_url, echo=False)
 
     async with engine.begin() as conn:
-        logger.info("Dropping all tables...")
-        await conn.run_sync(metadata.drop_all)
+        #logger.info("Dropping all tables...")
+        #await conn.run_sync(metadata.drop_all)
         logger.info("Creating tables...")
         await conn.run_sync(metadata.create_all)
         logger.info("Tables created successfully.")
