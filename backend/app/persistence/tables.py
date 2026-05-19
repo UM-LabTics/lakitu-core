@@ -38,3 +38,17 @@ event_spot = Table(
         ["spot.id", "spot.parking_id"]
     )
 )
+
+user = Table(
+    "user", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("email", String, nullable=False, unique=True),
+    Column("hashed_password", String, nullable=False),
+    Column("name", String, nullable=False)
+)
+
+has_access = Table(
+    "has_access", metadata,
+    Column("user_id", Integer, ForeignKey("user.id"), primary_key=True),
+    Column("parking_id", String, ForeignKey("parking_lot.id"), primary_key=True)
+)

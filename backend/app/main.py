@@ -41,6 +41,7 @@ async def lifespan(app: FastAPI):
     cloud_backend = CloudBackend(redis_client, persistence)
     cloud_receptor = CloudReceptor(settings, cloud_backend)
     cloud_backend.set_websocket_broadcast_method(websocket_manager.broadcast)
+    app.state.cloud_backend = cloud_backend
 
     # Empezar el polling de SQS
     await cloud_receptor.start()
