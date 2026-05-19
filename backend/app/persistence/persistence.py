@@ -6,7 +6,7 @@ from sqlalchemy import insert, select, and_, func, update
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.models import StateUpdateEvent
-from app.persistence.tables import event, event_spot, spot, parking_lot
+from app.persistence.tables import event, event_spot, spot, parking_lot, user, has_access
 
 import asyncio
 import base64
@@ -64,7 +64,7 @@ class Persistence:
                     insert(event).values(
                         timestamp=state_update.timestamp.astimezone(timezone.utc),
                         free_spots=state_update.free_spots,
-                        image_url=None,  # we insert it as None at first and then update it after the s3 upload so if it fails, the event row still gets saver to the db
+                        image_url=None,  # we insert it as None at first and then update it after the s3 upload so if it fails, the event row still gets saved to the db
                     ).returning(event.c.id)
                 )
                 event_id = result.scalar_one()
@@ -254,3 +254,108 @@ class Persistence:
         except Exception as e:
             logger.error(f"Failed to get states between {from_dt} and {to_dt}: {e}")
             return {"total_states": 0, "states": []}
+        
+    async def add_user(self, email: str, hashed_password: str, name: str) -> int | None:
+        """Adds a new user to the database. Returns the new user ID or None if it fails."""
+        try:
+            async with self.engine.begin() as conn:
+                result = await conn.execute(
+                    insert(user).values(
+                        email=email,
+                        hashed_password=hashed_password,
+                        name=name
+                    ).returning(user.c.id)
+                )
+                user_id = result.scalar_one()
+                return user_id
+        except Exception as e:
+            logger.error(f"Failed to add user: {e}")
+            return None
+        
+    async def get_user_by_email(self, email: str) -> dict | None:
+        """Fetches a user by email. Returns a dict with user data or None if not found."""
+        try:
+            async with self.engine.connect() as conn:
+                result = await conn.execute(
+                    select(user).where(user.c.email == email)
+                )
+                row = result.mappings().first()
+                return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Failed to get user by email: {e}")
+            return None
+        
+    async def update_password(self, user_id: int, new_hashed_password: str) -> bool:
+        """Updates a user's password. Returns True if successful."""
+        try:
+            async with self.engine.begin() as conn:
+                await conn.execute(
+                    update(user)
+                    .where(user.c.id == user_id)
+                    .values(hashed_password=new_hashed_password)
+                )
+                return True
+        except Exception as e:
+            logger.error(f"Failed to update password for user {user_id}: {e}")
+            return False
+        
+    async def update_name(self, user_id: int, new_name: str) -> bool:
+        """Updates a user's name. Returns True if successful."""
+        try:
+            async with self.engine.begin() as conn:
+                await conn.execute(
+                    update(user)
+                    .where(user.c.id == user_id)
+                    .values(name=new_name)
+                )
+                return True
+        except Exception as e:
+            logger.error(f"Failed to update name for user {user_id}: {e}")
+            return False
+    
+    async def grant_access(self, user_id: int, parking_id: str) -> bool:
+        """Grants a user access to a parking lot. Returns True if successful."""
+        try:
+            async with self.engine.begin() as conn:
+                await conn.execute(
+                    insert(has_access).values(
+                        user_id=user_id,
+                        parking_id=parking_id
+                    )
+                )
+                return True
+        except Exception as e:
+            logger.error(f"Failed to grant access for user {user_id} to parking {parking_id}: {e}")
+            return False
+        
+    async def check_access(self, user_id: int, parking_id: str) -> bool:
+        """Checks if a user has access to a parking lot. Returns True if they do."""
+        try:
+            async with self.engine.connect() as conn:
+                result = await conn.execute(
+                    select(func.count())
+                    .select_from(has_access)
+                    .where(
+                        and_(
+                            has_access.c.user_id == user_id,
+                            has_access.c.parking_id == parking_id
+                        )
+                    )
+                )
+                return result.scalar_one() > 0
+        except Exception as e:
+            logger.error(f"Failed to check access for user {user_id} to parking {parking_id}: {e}")
+            return False
+    
+    async def list_user_parking_access(self, user_id: int) -> list[str]:
+        """Lists all parking lot IDs that a user has access to."""
+        try:
+            async with self.engine.connect() as conn:
+                result = await conn.execute(
+                    select(has_access.c.parking_id)
+                    .where(has_access.c.user_id == user_id)
+                )
+                return [row[0] for row in result]
+        except Exception as e:
+            logger.error(f"Failed to list parking access for user {user_id}: {e}")
+            return []
