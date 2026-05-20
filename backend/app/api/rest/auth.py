@@ -29,4 +29,4 @@ async def login(
     if result is None:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     user, token = result
-    return {"accessToken": token.access_token, "user": user}
+    return {"accessToken": token, "user": user}
