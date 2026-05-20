@@ -88,6 +88,7 @@ class Persistence:
                             "event_id": event_id,
                             "spot_id": s.spot_id,
                             "parking_id": state_update.parking_id,
+                            "device_id": state_update.device_id,
                             "new_state": s.status,
                         }
                         for s in state_update.spots

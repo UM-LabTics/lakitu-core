@@ -1,24 +1,10 @@
-# Script to create all tables in RDS and seed them with test data.
-
-# Matches mock_pi for now!!! Change it to match Pi after or create a new seed
-
-import asyncio
-import logging
-from datetime import datetime, timezone, timedelta
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import insert
-from sqlalchemy.dialects.postgresql import insert as pg_insert
-
-from app.persistence.tables import metadata, parking_lot, spot, event, event_spot
-from app.settings import settings
-
 """
-Script to create all tables in RDS and seed them with test data.
+Seed script for Mock Pi
 Run from inside the backend container:
 
-    python -m app.persistence.seed
+    python -m app.persistence.seed_mock
 
-Make sure your .env file is present and DATABASE_URL points to RDS before running.
+Make sure the .env file is present and DATABASE_URL points to RDS before running.
 """
 
 import asyncio
@@ -28,7 +14,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-from app.persistence.tables import metadata, parking_lot, spot, event, event_spot
+from app.persistence.tables import metadata, parking_lot, device, spot, event, event_spot, user, has_access
 from app.settings import settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -43,9 +29,29 @@ PARKING_LOT = {
     "total_spots": 12,
 }
 
+DEVICE = {
+    "id": "mockDevice",
+    "parking_id": "mock-01",
+}
+
 SPOTS = [
-    {"id": f"spot_{i:02d}", "parking_id": "mock-01"}
+    {"id": f"spot_{i:02d}", "parking_id": "mock-01", "device_id": "mockDevice"}
     for i in range(1, 13)  # spot_01 through spot_12
+]
+
+USERS = [
+    {
+        "email": "admin@lakitu.com",
+        "hashed_password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQyCMsFnUMkqXBG9.3dLlNZGu",  # "admin123"
+        "name": "Admin User",
+        "is_admin": 1,
+    },
+    {
+        "email": "user@lakitu.com",
+        "hashed_password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQyCMsFnUMkqXBG9.3dLlNZGu",  # "admin123"
+        "name": "Regular User",
+        "is_admin": 0,
+    },
 ]
 
 
@@ -63,10 +69,10 @@ def make_events():
             "free_spots": 12 - occupied_count,
             "image_url": None,
             "spots": [
-                {"spot_id": s, "parking_id": "mock-01", "new_state": 1}
+                {"spot_id": s, "parking_id": "mock-01", "device_id": "mockDevice", "new_state": 1}
                 for s in occupied
             ] + [
-                {"spot_id": s, "parking_id": "mock-01", "new_state": 0}
+                {"spot_id": s, "parking_id": "mock-01", "device_id": "mockDevice", "new_state": 0}
                 for s in free
             ],
         }
@@ -131,12 +137,39 @@ async def seed():
             .on_conflict_do_nothing()
         )
 
+        logger.info("Inserting device...")
+        await conn.execute(
+            pg_insert(device)
+            .values(DEVICE)
+            .on_conflict_do_nothing()
+        )
+
         logger.info("Inserting %d spots...", len(SPOTS))
         await conn.execute(
             pg_insert(spot)
             .values(SPOTS)
             .on_conflict_do_nothing()
         )
+
+        logger.info("Inserting users...")
+        await conn.execute(
+            pg_insert(user)
+            .values(USERS)
+            .on_conflict_do_nothing()
+        )
+
+        # Give both users access to mock-01
+        logger.info("Inserting has_access...")
+        # We need the user ids — fetch them first
+        from sqlalchemy import select
+        result = await conn.execute(select(user.c.id, user.c.email))
+        users = result.mappings().all()
+        for u in users:
+            await conn.execute(
+                pg_insert(has_access)
+                .values({"user_id": u["id"], "parking_id": "mock-01"})
+                .on_conflict_do_nothing()
+            )
 
         logger.info("Inserting test events...")
         for ev_data in make_events():
@@ -158,6 +191,7 @@ async def seed():
                         "event_id": event_id,
                         "spot_id": s["spot_id"],
                         "parking_id": s["parking_id"],
+                        "device_id": s["device_id"],
                         "new_state": s["new_state"],
                     }
                     for s in ev_data["spots"]
