@@ -11,6 +11,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.persistence import persistence
+from app.api.websockets.manager import manager
 
 logger = logging.getLogger(__name__)
 ENVIRONMENT = os.getenv("ENVIRONMENT", "production").lower()
