@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from typing import Optional
 
 from app.api.websockets.manager import manager
@@ -23,25 +23,26 @@ async def debug_broadcast(payload: BroadcastRequest):
 @router.get("/events")
 async def get_events(
     parking_id: str = Query(...),
-    from_date: date = Query(..., alias="from"),
-    to_date: Optional[date] = Query(default=None, alias="to"),
+    from_dt: datetime = Query(..., alias="from"),
+    to_dt: Optional[datetime] = Query(default=None, alias="to"),
     limit: int = Query(default=20),
     page: int = Query(default=1),
 ):
-    from_dt = datetime(from_date.year, from_date.month, from_date.day, tzinfo=timezone.utc)
+    # ensure UTC timezone
+    from_dt = from_dt.replace(tzinfo=timezone.utc) if from_dt.tzinfo is None else from_dt
 
     # if no to_date, return state at a single moment
-    if to_date is None:
+    if to_dt is None:
         result = await persistence.get_state_at(
             parking_id=parking_id,
             moment=from_dt,
         )
         return result
 
-    # if to_date provided, validate and return states between
-    to_dt = datetime(to_date.year, to_date.month, to_date.day, 23, 59, 59, tzinfo=timezone.utc)
+    # ensure UTC timezone for to_dt
+    to_dt = to_dt.replace(tzinfo=timezone.utc) if to_dt.tzinfo is None else to_dt
 
-    if from_date > to_date:
+    if from_dt > to_dt:
         raise HTTPException(status_code=422, detail="'from' must be before or equal to 'to'")
 
     result = await persistence.get_states_between(
