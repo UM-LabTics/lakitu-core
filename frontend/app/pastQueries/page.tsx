@@ -1,31 +1,24 @@
 "use client";
 
 import { useState } from "react";
-
-interface ParkingSpot {
-  spot_id: string;
-  status: -1 | 0 | 1;
-}
-
-interface ParkingStateSnapshot {
-  pi_timestamp: string;
-  free_spots: number;
-  image_url: string | null;
-  spots: ParkingSpot[];
-}
-
-interface StatesResponse {
-  total_states: number;
-  states: ParkingStateSnapshot[];
-}
+import { getStateAt, getStatesBetween } from "@/lib/api/events";
+import type { ParkingSpot, ParkingStateSnapshot, StatesResponse } from "@/lib/types/parking";
+import Input from "@/components/Input";
 
 export default function PastQueries() {
   const [fromDate, setFromDate] = useState("");
+  const [fromTime, setFromTime] = useState("00:00");
   const [toDate, setToDate] = useState("");
+  const [toTime, setToTime] = useState("23:59");
   const [results, setResults] = useState<StatesResponse | null>(null);
   const [singleState, setSingleState] = useState<ParkingStateSnapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // combine date and time into ISO string for the API
+  function buildDatetime(date: string, time: string): string {
+    return `${date}T${time}:00`;
+  }
 
   async function handleSearch() {
     if (!fromDate) {
@@ -38,27 +31,23 @@ export default function PastQueries() {
     setSingleState(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      let url = `${apiUrl}/api/events?parking_id=mock-01&from=${fromDate}`;
-      if (toDate) url += `&to=${toDate}`;
-
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Error: ${response.status}`);
-
-      const data = await response.json();
-
-      // If no to_date, backend returns a single state snapshot directly
-      if (!toDate) {
-        setSingleState(data as ParkingStateSnapshot);
-      } else {
-        setResults(data as StatesResponse);
-      }
-    } catch (err) {
-      setError("Failed to fetch events. Is the backend running?");
-    } finally {
-      setLoading(false);
-    }
+    if (!toDate) {
+      const data = await getStateAt("mock-01", buildDatetime(fromDate, fromTime));
+      setSingleState(data as ParkingStateSnapshot);
+    } else {
+      const data = await getStatesBetween(
+        "mock-01",
+        buildDatetime(fromDate, fromTime),
+        buildDatetime(toDate, toTime)
+      );
+      setResults(data as StatesResponse);
+}
+  } catch (err) {
+    setError("Failed to fetch events. Is the backend running?");
+  } finally {
+    setLoading(false);
   }
+}
 
   function renderSpots(spots: ParkingSpot[]) {
     const free = spots.filter((s) => s.status === 0).map((s) => s.spot_id).join(", ");
@@ -79,26 +68,34 @@ export default function PastQueries() {
       <p>Query historical parking lot states by date range.</p>
 
       <div>
-        <label>
-          From:
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-          />
-        </label>
-        <label>
-          To (optional):
-          <input
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-          />
-        </label>
-        <button onClick={handleSearch} disabled={loading}>
-          {loading ? "Loading..." : "Search"}
-        </button>
-      </div>
+        <p>From:</p>
+        <Input
+          variant="date"
+          value={fromDate}
+          onChange={(value) => setFromDate(value)}
+        />
+        <Input
+          variant="time"
+          value={fromTime}
+          onChange={(value) => setFromTime(value)}
+        />
+    </div>
+    <div>
+      <p>To (optional):</p>
+      <Input
+        variant="date"
+        value={toDate}
+        onChange={(value) => setToDate(value)}
+      />
+      <Input
+        variant="time"
+        value={toTime}
+        onChange={(value) => setToTime(value)}
+      />
+    </div>
+    <button onClick={handleSearch} disabled={loading}>
+      {loading ? "Loading..." : "Search"}
+    </button>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
