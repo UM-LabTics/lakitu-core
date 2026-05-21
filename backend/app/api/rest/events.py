@@ -25,8 +25,8 @@ async def get_events(
     parking_id: str = Query(...),
     from_dt: datetime = Query(..., alias="from"),
     to_dt: Optional[datetime] = Query(default=None, alias="to"),
-    limit: int = Query(default=20),
-    page: int = Query(default=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    page: int = Query(default=1, ge=1),
 ):
     # ensure UTC timezone
     from_dt = from_dt.replace(tzinfo=timezone.utc) if from_dt.tzinfo is None else from_dt
@@ -52,5 +52,11 @@ async def get_events(
         limit=limit,
         page=page,
     )
-    return result
+    return {
+    "items": result["states"],
+    "total": result["total_states"],
+    "page": page,
+    "page_size": limit,
+    "pages": -(-result["total_states"] // limit),  # ceil division
+    }
 
