@@ -14,7 +14,6 @@ from app.settings import settings
 
 from app.api.rest.events import router as rest_router 
 from app.api.websockets.endpoints import router as ws_router
-from app.api.websockets.manager import manager as websocket_manager
 from app.api.rest.auth import router as auth_router
 
 
@@ -41,7 +40,6 @@ async def lifespan(app: FastAPI):
     # Construir cadena de dependencias
     cloud_backend = CloudBackend(redis_client, persistence)
     cloud_receptor = CloudReceptor(settings, cloud_backend)
-    cloud_backend.set_websocket_broadcast_method(websocket_manager.broadcast)
     app.state.cloud_backend = cloud_backend
 
     # Empezar el polling de SQS
