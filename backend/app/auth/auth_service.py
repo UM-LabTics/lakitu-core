@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import jwt
 from passlib.context import CryptContext
-from app.auth.auth_types import TokenPayload, TokenResponse
+from app.auth.auth_types import TokenPayload, TokenResponse, SignupRequest, LoginRequest, UserResponse
 from app.persistence.persistence import Persistence
 from app.settings import settings
 
