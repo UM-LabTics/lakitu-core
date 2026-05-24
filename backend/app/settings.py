@@ -13,7 +13,12 @@ class Settings(BaseSettings):
     aws_access_key_id: str | None = None
     aws_secret_access_key: str | None = None
     aws_default_region: str = "us-east-2"
+    aws_account_id: str | None = None
 
+    # IoT Core
+    iot_endpoint: str
+    iot_topic: str
+    
     # SQS
     sqs_queue_url: str
     sqs_poll_interval_seconds: int = Field(default=2, ge=1)

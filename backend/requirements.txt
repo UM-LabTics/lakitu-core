@@ -6,6 +6,8 @@ anyio==4.13.0
     # via
     #   starlette
     #   watchfiles
+awsiotsdk==1.29.0
+    # via -r requirements.in
 bcrypt==4.0.1 #No es el más muevo pero es el que funciona con passlib
     # via passlib
 boto3==1.42.88

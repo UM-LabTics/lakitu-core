@@ -8,16 +8,14 @@ from functools import partial
 from pathlib import Path
 from datetime import timezone
 
-#from app.business_logic.cloud_backend import CloudBackend
 from app.models import StateUpdateEvent
  
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.settings import Settings
 from app.business_logic.cloud_backend import CloudBackend
+from app.cloud_receptor.command_manager import CommandManager
 
 logger = logging.getLogger(__name__)
 SNAPSHOT_DIR = Path("/tmp/parking_snapshots")
@@ -30,9 +28,10 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "production").lower()
 class CloudReceptor:
     """
     Hace polling de una queue SQS usando una task asincrona de asyncio.
+    Expone el envío de comandos a dispositivos IoT a través de CommandManager.
 
     Uso: 
-        receptor = CloudReceptor(settings, cloud_backend)
+        receptor = CloudReceptor(settings, cloud_backend, command_manager)
 
          @asynccontextmanager
         async def lifespan(app: FastAPI):
@@ -43,10 +42,11 @@ class CloudReceptor:
         app = FastAPI(lifespan=lifespan)
     """
 
-    def __init__(self, settings: Settings, cloud_backend: CloudBackend
-                 ) -> None:
+    def __init__(self,settings: Settings,cloud_backend: CloudBackend) -> None:
         self.settings = settings
         self.cloud_backend = cloud_backend
+        self.command_manager = CommandManager(settings)
+
         self._running = False
         self._task: asyncio.Task | None = None
 
@@ -66,6 +66,9 @@ class CloudReceptor:
             logger.warning("CloudReceptor.start() called while already running.")
             return
         self._running = True
+
+        await self.command_manager.start()
+
         self._task = asyncio.create_task(self._poll_loop(), name="sqs-poll-loop")
         logger.info(
             "CloudReceptor started — polling %s every %ss.",
@@ -81,6 +84,8 @@ class CloudReceptor:
                 await self._task
             except asyncio.CancelledError:
                 pass
+
+        await self.command_manager.stop()
         logger.info("CloudReceptor stopped.")
 
     # ------------------------------------------------------------------
@@ -233,3 +238,22 @@ class CloudReceptor:
                 "[SQS] Failed to delete MessageId=%s — it will reappear after the visibility timeout.",
                 message_id,
             )
+
+    # ------------------------------------------------------------------
+    # Command API — delegado a CommandManager
+    # ------------------------------------------------------------------
+
+    async def send_command(self, payload: dict[str,str], timeout: float = 60.0) -> dict:
+        """
+        Envía un comando a un dispositivo IoT a través de CommandManager y espera la respuesta.
+        """
+        parking_id = payload.get("parking_id")
+        if not parking_id:
+            raise ValueError("Payload must include 'parking_id' field.")
+        
+        device_id = payload.get("device_id")
+        if not device_id:
+            raise ValueError("Payload must include 'device_id' field.")
+        
+        device_full_id = f"{parking_id}-{device_id}"
+        return await self.command_manager.send_command(device_full_id, timeout)
