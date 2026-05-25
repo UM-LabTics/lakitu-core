@@ -14,10 +14,11 @@ from app.settings import Settings
 
 logger = logging.getLogger(__name__)
 
-# La respuesta se publica en un topic con este formato, el executionId siempre vive en el índice 5 al hacer split("/").
-#   $aws/commands/things/{thingName}/executions/{executionId}/response/json
-RESPONSE_TOPIC = "$aws/commands/things/+/executions/+/response/json"
-EXECUTION_ID_TOPIC_INDEX = 5
+# La respuesta se publica en un topic con este formato, el executionId siempre vive en el índice 3 al hacer split("/").
+#   commands/responses/{thingName}/{executionId}
+# (IoT Rule hace bridge desde $aws/commands/things/{thingName}/executions/{executionId}/response/json)
+RESPONSE_TOPIC = "commands/responses/+/+"
+EXECUTION_ID_TOPIC_INDEX = 3
 
 
 class CommandManager:
@@ -47,10 +48,17 @@ class CommandManager:
             region=settings.aws_default_region,
             credentials_provider=auth.AwsCredentialsProvider.new_default_chain(),
             client_id=f"backend-command-manager-{uuid.uuid4().hex[:8]}",
-            clean_session=True,
+            clean_session=False,
             keep_alive_secs=30,
+            on_connection_interrupted=self._on_interrupted,
+            on_connection_resumed=self._on_resumed,
         )
 
+    def _on_interrupted(self, connection, error, **kwargs):
+        logger.error("CommandManager — connection interrupted: %s", error)
+
+    def _on_resumed(self, connection, return_code, session_present, **kwargs):
+        logger.info("CommandManager — connection resumed (session_present=%s)", session_present)
 
     async def start(self) -> None:
         """Conecta por MQTT y se suscribe al topic de respuestas."""
@@ -160,7 +168,7 @@ class CommandManager:
         MQTT callback para manejar respuestas de dispositivos. Extrae el executionId del topic, decodifica el payload JSON, y resuelve el future correspondiente.
         """
         parts = topic.split("/")
-        if len(parts) < 6:
+        if len(parts) < 4:
             logger.warning("CommandManager — unexpected response topic: '%s', ignoring.", topic)
             return
 
@@ -180,7 +188,6 @@ class CommandManager:
         if self._loop is None:
             logger.error("CommandManager — event loop not set, cannot resolve future.")
             return
-
 
         self._loop.call_soon_threadsafe(self._resolve_future, future, data)
 

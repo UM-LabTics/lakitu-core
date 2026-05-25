@@ -185,39 +185,11 @@ class CloudReceptor:
              "└────────────────────────────────────────────────┘"
         )
 
-        # --- Snapshot (DEBUG) ------------------------------------------------
-        if ENVIRONMENT == "development":
-            await self._save_snapshot(msg)
-
         # --- UpdateState a Cloud Backend  ------------------------------------
         await self.cloud_backend.process_event(msg)
 
         # --- Done ------------------------------------------------------------
         await self._delete_message(receipt_handle, message_id)
-
-    # PARA DEBUG
-    async def _save_snapshot(self, msg: StateUpdateEvent) -> None:
-        """Decodifica el snapshot de base64 y lo guarda en disco. Se hace en un thread separado para no bloquear el loop de asyncio con operaciones de I/O."""
-        loop = asyncio.get_running_loop()
-
-        def _write() -> Path:
-            SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
-
-            ts_str = msg.timestamp.strftime("%Y%m%dT%H%M%SZ")
-            filename = f"{msg.parking_id}_seq{msg.seq:06d}_{ts_str}.jpg"
-            dest = SNAPSHOT_DIR / filename
-
-            image_bytes = base64.b64decode(msg.snapshot)
-            dest.write_bytes(image_bytes)
-            return dest
-
-        try:
-            dest = await loop.run_in_executor(None, _write)
-            logger.debug("[Snapshot] Saved → %s", dest)
-        except (ValueError, TypeError, binascii.Error):
-            logger.warning("[Snapshot] seq=%d — snapshot is not valid base64, skipping.", msg.seq)
-        except OSError:
-            logger.warning("[Snapshot] seq=%d — could not write snapshot to disk, skipping.", msg.seq)
 
 
 
