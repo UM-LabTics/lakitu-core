@@ -1,3 +1,8 @@
+"use server";
+
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export interface AuthResponse {
@@ -8,29 +13,62 @@ export interface AuthResponse {
   };
 }
 
-export async function login(
-  email: string,
-  password: string,
-): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/api/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
+export async function login(formData: FormData): Promise<void> {
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/api/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch {
+    throw new Error("500 Internal Server Error: Could not reach the server.");
+  }
+
   if (!response.ok) throw new Error(`Error: ${response.status}`);
-  return response.json();
+  const { data } = await response.json();
+  (await cookies()).set("session_token", data.token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+  redirect("/liveFeed");
 }
 
-export async function signup(
-  email: string,
-  password: string,
-  name: string,
-): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/api/signup`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, name }),
-  });
+export async function signup(formData: FormData): Promise<void> {
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const name = formData.get("name") as string;
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/api/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, name }),
+    });
+  } catch {
+    throw new Error("500 Internal Server Error: Could not reach the server.");
+  }
+
   if (!response.ok) throw new Error(`Error: ${response.status}`);
-  return response.json();
+  const { data } = await response.json();
+  (await cookies()).set("session_token", data.token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+  redirect("/liveFeed");
+}
+
+export async function logout() {
+  (await cookies()).delete('session_token');
+  redirect('/login');
 }
