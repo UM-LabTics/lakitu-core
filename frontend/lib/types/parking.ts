@@ -22,8 +22,8 @@ interface ParkingStateSnapshot {
 }
 
 interface StatesResponse {
-  total_states: number;
-  states: ParkingStateSnapshot[];
+  total: number;
+  items: ParkingStateSnapshot[];
 }
 
 export type { ParkingState, ParkingSpot, ParkingStateSnapshot, StatesResponse };

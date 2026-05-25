@@ -67,7 +67,7 @@ export default function PastQueries() {
       <h1>Past Queries</h1>
       <p>Query historical parking lot states by date range.</p>
 
-      <div>
+      <div className="flex flex-col gap-4">
         <p>From:</p>
         <Input
           variant="date"
@@ -80,7 +80,7 @@ export default function PastQueries() {
           onChange={(value) => setFromTime(value)}
         />
     </div>
-    <div>
+    <div className="flex flex-col gap-4">
       <p>To (optional):</p>
       <Input
         variant="date"
@@ -109,18 +109,21 @@ export default function PastQueries() {
       )}
 
       {/* Multiple states (with to_date) */}
-      {results && (
-        <div>
-          <p>Total states found: {results.total_states}</p>
-          {results.states.map((snapshot, index) => (
-            <div key={index} style={{ border: "1px solid gray", margin: "8px", padding: "8px" }}>
-              <p>{new Date(snapshot.pi_timestamp).toLocaleString()}</p>
-              <p>Free spots: {snapshot.free_spots}</p>
-              {renderSpots(snapshot.spots)}
-            </div>
-          ))}
-        </div>
-      )}
+      {results && (() => {
+        console.log("Results:", results);
+        return (
+          <div>
+            <p>Total states found: {results.total}</p>
+            {results.items.map((snapshot, index) => (
+              <div key={index} style={{ border: "1px solid gray", margin: "8px", padding: "8px" }}>
+                <p>{new Date(snapshot.pi_timestamp).toLocaleString()}</p>
+                <p>Free spots: {snapshot.free_spots}</p>
+                {renderSpots(snapshot.spots)}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
