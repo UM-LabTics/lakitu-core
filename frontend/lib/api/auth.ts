@@ -74,3 +74,17 @@ export async function logout() {
   (await cookies()).delete('session_token');
   redirect('/login');
 }
+
+
+export async function authenticatedFetch(url: string, options: RequestInit = {}) {
+  const token = (await cookies()).get('session_token')?.value;
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+}
