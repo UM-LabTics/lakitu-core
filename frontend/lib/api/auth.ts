@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.BACKEND_INTERNAL_URL ?? "http://backend:8000";
 
 export interface AuthResponse {
   token: string;
@@ -29,14 +29,15 @@ export async function login(formData: FormData): Promise<void> {
   }
 
   if (!response.ok) throw new Error(`Error: ${response.status}`);
-  const { data } = await response.json();
+  const data = await response.json();
   (await cookies()).set("session_token", data.token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.ENVIRONMENT === "production",
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
+  console.log("Login successful, token stored in cookie:", data.token);
   redirect("/liveFeed");
 }
 
@@ -57,14 +58,15 @@ export async function signup(formData: FormData): Promise<void> {
   }
 
   if (!response.ok) throw new Error(`Error: ${response.status}`);
-  const { data } = await response.json();
+  const data = await response.json();
   (await cookies()).set("session_token", data.token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.ENVIRONMENT === "production",
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
+  console.log("Signup successful, token stored in cookie:", data.token);
   redirect("/liveFeed");
 }
 

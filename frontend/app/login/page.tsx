@@ -7,7 +7,6 @@ import Input from "@/components/Input";
 
 export default function LoginForm() {
   return (
-    // Pass the server action directly to the form's action prop
     <form action={login} className="max-w-md mx-auto mt-10">
       <Card title="Log in" >
         <Input name="email" variant="text" placeholder="Email" />
