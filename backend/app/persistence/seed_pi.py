@@ -24,18 +24,18 @@ logger = logging.getLogger(__name__)
 # ── Test data ────────────────────────────────────────────────────────────────
 
 PARKING_LOT = {
-    "id": "01",
+    "id": "p01",
     "name": "Edificio Parque de Innovación LATU - Universidad de Montevideo",
     "total_spots": 26,
 }
 
 DEVICE = {
     "id": "raspberry_pi",
-    "parking_id": "01",
+    "parking_id": "p01",
 }
 
 SPOTS = [
-    {"id": f"spot_{i}", "parking_id": "01", "device_id": "raspberry_pi"}
+    {"id": f"spot_{i}", "parking_id": "p01", "device_id": "raspberry_pi"}
     for i in range(1, 27)  # spot_1 through spot_26
 ]
 
@@ -53,10 +53,10 @@ def make_events():
             "free_spots": 26 - occupied_count,
             "image_url": None,
             "spots": [
-                {"spot_id": s, "parking_id": "01", "device_id": "raspberry_pi", "new_state": 1}
+                {"spot_id": s, "parking_id": "p01", "device_id": "raspberry_pi", "new_state": 1}
                 for s in occupied
             ] + [
-                {"spot_id": s, "parking_id": "01", "device_id": "raspberry_pi", "new_state": 0}
+                {"spot_id": s, "parking_id": "p01", "device_id": "raspberry_pi", "new_state": 0}
                 for s in free
             ],
         }
@@ -108,6 +108,8 @@ async def seed():
     engine = create_async_engine(settings.database_url, echo=False)
 
     async with engine.begin() as conn:
+        #logger.info("Dropping all tables...")
+        #await conn.run_sync(metadata.drop_all)
         logger.info("Creating tables if they don't exist...")
         await conn.run_sync(metadata.create_all)
         logger.info("Tables ready.")
