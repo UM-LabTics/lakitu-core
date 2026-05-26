@@ -26,14 +26,14 @@ export default function Card({
       {title && (
         <>
           <h1
-            className={`text-center font-semibold ${
+            className={`text-center font-medium ${
               isDark ? "text-primary-super-light" : "text-primary"
             }`}
           >
             {title}
           </h1>
           <div
-            className={`mb-4 h-1 rounded-xl ${
+            className={`mb-4 h-1 rounded-xl w-full ${
               isDark ? "bg-primary-super-light" : "bg-primary-light"
             }`}
           />
