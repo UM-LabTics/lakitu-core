@@ -6,13 +6,13 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("session_token")?.value;
 
-  const isPublicRoute = PUBLIC_ROUTES.includes(pathname) || pathname==="/dev";
+  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
 
   if (token && isPublicRoute) {
     return NextResponse.redirect(new URL("/liveFeed", request.url));
   }
 
-  if (!token && !isPublicRoute) {
+  if (!token && !(isPublicRoute || pathname === "/dev")) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
