@@ -6,6 +6,7 @@ import { Eye, EyeOff, Clock, Calendar } from "lucide-react";
 type InputVariant = "text" | "password" | "time" | "date";
 
 interface InputProps {
+  name?: string;
   variant?: InputVariant;
   placeholder?: string;
   value?: string;
@@ -25,6 +26,7 @@ const variantIcon: Record<InputVariant, React.ReactNode | null> = {
 
 
 export default function Input({
+  name,
   variant = "text",
   placeholder,
   value,
@@ -61,6 +63,7 @@ export default function Input({
   return (
     <div className={`relative flex items-center ${className}`}>
       <input
+        name={name}
         ref={inputRef}
         type={inputType}
         value={value}

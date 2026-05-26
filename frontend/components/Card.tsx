@@ -22,19 +22,19 @@ export default function Card({
   const isDark = variant === "dark";
 
   return (
-    <div className={`${variantClass[variant]} ${className}`}>
+    <div className={`${variantClass[variant]} ${className} flex flex-col gap-4`}>
       {title && (
         <>
-          <h3
-            className={`text-center font-semibold mb-3 ${
+          <h1
+            className={`text-center font-medium ${
               isDark ? "text-primary-super-light" : "text-primary"
             }`}
           >
             {title}
-          </h3>
-          <hr
-            className={`mb-4 border-t ${
-              isDark ? "border-primary-super-light" : "border-primary-light"
+          </h1>
+          <div
+            className={`mb-4 h-1 rounded-xl w-full ${
+              isDark ? "bg-primary-super-light" : "bg-primary-light"
             }`}
           />
         </>

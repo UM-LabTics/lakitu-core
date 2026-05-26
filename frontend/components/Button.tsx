@@ -27,7 +27,7 @@ export default function Button({
       onClick={onClick}
       disabled={disabled}
       className={`btn-${variant} disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${className}`}
-      style={{ width, height }}
+      style={ variant==="contained" ? { width, height } : {} }
     >
       {children}
     </button>

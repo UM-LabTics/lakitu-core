@@ -1,4 +1,8 @@
 import type { ParkingStateSnapshot, StatesResponse } from "@/lib/types/parking";
+import { authenticatedFetch } from "./auth";
+
+// Va a haber que usar authenticatedFetch en lugar de fetch para incluir el token de autenticación en las solicitudes a la API, 
+// pero por ahora lo dejamos así pq Santi no implementó la necesidad de tokens en el back.
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
