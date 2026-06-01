@@ -1,4 +1,3 @@
-// No "use client" — this is a Server Component
 import { ParkingFeed } from "./_components/ParkingFeed";
 
 interface Props {
