@@ -360,3 +360,20 @@ class Persistence:
         except Exception as e:
             logger.error(f"Failed to list parking access for user {user_id}: {e}")
             return []
+    
+    async def get_user_by_credentials(self, email: str) -> dict | None:
+        """
+        Fetches a user by email for credential validation.
+        Returns a dict with id, email, and hashed_password, or None if not found.
+        """
+        try:
+            async with self.engine.connect() as conn:
+                result = await conn.execute(
+                    select(user.c.id, user.c.email, user.c.hashed_password)
+                    .where(user.c.email == email)
+                )
+                row = result.mappings().first()
+                return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Failed to get user for credential validation: {e}")
+            return None
