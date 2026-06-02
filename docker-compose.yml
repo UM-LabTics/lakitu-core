@@ -34,11 +34,6 @@ services:
       - "8000:8000"
     env_file:
       - .env
-    environment:
-      # Sobrescribe / agrega cualquier cosa que siempre sea la misma en desarrollo independientemente de
-      # lo que haya en .env. Redis siempre es local en desarrollo, así que lo hardcodeamos.
-      REDIS_URL: "redis://redis:6379/0"
-      ENVIRONMENT: "development"
     volumes:
         - ./backend:/app  # hot-reload - uvicorn reinicia cuando detecta un guardado con cambios
     depends_on:
