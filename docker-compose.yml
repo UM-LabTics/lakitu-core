@@ -36,9 +36,7 @@ services:
       - .env
     volumes:
         - ./backend:/app  # hot-reload - uvicorn reinicia cuando detecta un guardado con cambios
-    depends_on:
-      redis:
-        condition: service_healthy
+
     command: >
       uvicorn app.main:app
         --host 0.0.0.0
