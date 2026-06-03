@@ -40,6 +40,18 @@ class AuthService:
         user = UserResponse(id=user_data["id"], email=user_data["email"])
         token = self.create_token(str(user_data["id"]))
         return user, token
+
+    async def validate_credentials(self, email: str, password: str) -> UserResponse | None:
+        """
+        Validates user credentials through persistence.
+        Returns UserResponse if valid, None otherwise.
+        """
+        user_data = await self.persistence.get_user_by_credentials(email)
+        if user_data is None:
+            return None
+        if not self._verify_password(password, user_data["hashed_password"]):
+            return None
+        return UserResponse(id=user_data["id"], email=user_data["email"])
     
     def create_token(self, user_id: str) -> TokenResponse:
         now = datetime.utcnow()
