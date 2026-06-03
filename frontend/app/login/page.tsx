@@ -11,8 +11,12 @@ export default function LoginPage() {
           <Image src="/sombra.svg" alt="Sombra" width={180} height={50} style={{position:"absolute", bottom:"0", right:"0", transform:"translateX(-20px)" }}/>        
         </div>
       </div>
-      <div>
-        <LoginForm />
+      <div className="flex flex-col justify-baseline items-center bg-amber-200" >
+        <div className="flex flex-col justify-baseline items-center">
+          <Image src="/logotipo.svg" alt="Logo" width={400} height={100} style={{transform:"translateY(-20px)"}} />
+          <LoginForm />
+        </div>
+        <div className="flex-1" />
       </div>
     </div>
   );
