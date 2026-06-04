@@ -33,7 +33,7 @@ export default function Input({
   onChange,
   disabled = false,
   className = "",
-  height = "50px",
+  height = "100%",
   width = "100%",
 }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
