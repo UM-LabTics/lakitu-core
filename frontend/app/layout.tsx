@@ -32,7 +32,7 @@ export default async function RootLayout({
       lang="en"
       className={`${fredoka.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full h-full flex flex-col">
         {token && (
           <nav className="w-full h-16 flex items-center justify-end gap-4 px-6 bg-secondary-dark">
             <Button onClick={logout}>
