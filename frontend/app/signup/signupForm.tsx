@@ -7,7 +7,7 @@ import Input from "@/components/Input";
 
 export default function SignupForm() {
   return (
-    <div className="w-full flex flex-1 items-baseline justify-center">
+    <div className="w-full h-full flex items-baseline justify-center">
       <form action={signup} className="w-2/3 h-5/6">
         <Card title="Sign up" className="w-full h-full" >
 
