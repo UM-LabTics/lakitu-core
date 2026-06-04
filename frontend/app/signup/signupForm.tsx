@@ -8,7 +8,7 @@ import Input from "@/components/Input";
 export default function SignupForm() {
   return (
     <div className="w-full h-full flex items-baseline justify-center">
-      <form action={signup} className="w-2/3 h-5/6">
+      <form action={signup} className="w-2/3 h-5/6 min-h-100">
         <Card title="Sign up" className="w-full h-full" >
 
           <div className="flex flex-col items-center justify-center gap-4 w-full h-full">
@@ -22,7 +22,6 @@ export default function SignupForm() {
               <Input name="confirmPassword" variant="password" placeholder="Confirm Password" className="flex-1" />
             </div>
 
-            <div className="flex-1" />
             
             
             <Button type="submit" width="40%">Sign up</Button>

@@ -22,9 +22,9 @@ export default function Card({
   const isDark = variant === "dark";
 
   return (
-    <div className={`${variantClass[variant]} ${className} flex flex-col gap-4`}>
+    <div className={`${variantClass[variant]} ${className} flex flex-col`}>
       {title && (
-        <>
+        <div className="mb-4 flex flex-col justify-center items-center h-full w-full">
           <h1
             className={`text-center font-medium ${
               isDark ? "text-primary-super-light" : "text-primary"
@@ -33,11 +33,11 @@ export default function Card({
             {title}
           </h1>
           <div
-            className={`mb-4 h-1 rounded-xl w-full ${
+            className={`mt-4 h-1 rounded-xl w-full ${
               isDark ? "bg-primary-super-light" : "bg-primary-light"
             }`}
           />
-        </>
+        </div>
       )}
       {children}
     </div>
