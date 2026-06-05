@@ -13,7 +13,14 @@ export interface AuthResponse {
   };
 }
 
-export async function login(formData: FormData): Promise<void> {
+export type ActionResult =
+  | { success: true }
+  | { success: false; error: string };
+
+export async function login(
+  _prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
@@ -25,10 +32,14 @@ export async function login(formData: FormData): Promise<void> {
       body: JSON.stringify({ email, password }),
     });
   } catch {
-    throw new Error("500 Internal Server Error: Could not reach the server.");
+    return { success: false, error: "Could not reach the server. Please try again." };
   }
 
-  if (!response.ok) throw new Error(`Error: ${response.status}`);
+  if (!response.ok) {
+    const errorData = await response.json();
+    return { success: false, error: `${errorData.detail}. Please try again.` };
+  }
+
   const data = await response.json();
   (await cookies()).set("session_token", data.token, {
     httpOnly: true,
@@ -37,14 +48,36 @@ export async function login(formData: FormData): Promise<void> {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
-  console.log("Login successful, token stored in cookie:", data.token);
-  redirect("/liveFeed");
+
+  redirect("/home");
 }
 
-export async function signup(formData: FormData): Promise<void> {
+
+export async function signup(
+  _prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const confirmPassword = formData.get("confirmPassword") as string;
   const name = formData.get("name") as string;
+
+  if (password !== confirmPassword) {
+    return { success: false, error: "Passwords do not match." };
+  }
+
+  const passwordErrors = [];
+  if (password.length < 8) {
+    passwordErrors.push("8 characters");
+  }
+  if (!/\d/.test(password) || !/[a-zA-Z]/.test(password)) {
+    passwordErrors.push("one number and one letter");
+  }
+
+  if (passwordErrors.length > 0) {
+    return { success: false, error: `Password must contain at least ${passwordErrors.join(", ")}.` };
+  }
+
 
   let response: Response;
   try {
@@ -54,10 +87,14 @@ export async function signup(formData: FormData): Promise<void> {
       body: JSON.stringify({ email, password, name }),
     });
   } catch {
-    throw new Error("500 Internal Server Error: Could not reach the server.");
+    return { success: false, error: "Could not reach the server. Please try again." };
   }
 
-  if (!response.ok) throw new Error(`Error: ${response.status}`);
+  if (!response.ok) {
+    const errorData = await response.json();
+    return { success: false, error: `${errorData.detail}. Please try again.` };
+  }
+
   const data = await response.json();
   (await cookies()).set("session_token", data.token, {
     httpOnly: true,
@@ -66,7 +103,7 @@ export async function signup(formData: FormData): Promise<void> {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
-  console.log("Signup successful, token stored in cookie:", data.token);
+
   redirect("/liveFeed");
 }
 
