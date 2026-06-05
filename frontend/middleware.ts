@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 const PUBLIC_ROUTES = ["/login", "/signup"];
 
 export function middleware(request: NextRequest) {
-  /*
+
   const { pathname } = request.nextUrl;
+  /*
   const token = request.cookies.get("session_token")?.value;
 
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
@@ -16,11 +17,11 @@ export function middleware(request: NextRequest) {
   if (!token && !(isPublicRoute || pathname === "/dev")) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
-
+*/
   if (pathname === "/") {
     return NextResponse.redirect(new URL("/home", request.url));
   }
-*/
+
   return NextResponse.next();
 }
 
