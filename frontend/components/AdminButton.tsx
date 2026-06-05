@@ -17,7 +17,7 @@ export default function AdminButton({
   type = "button",
   className = "",
   width = "320px",
-  height = "50px",
+  height = "auto",
 }: AdminButtonProps) {
   return (
     <button
