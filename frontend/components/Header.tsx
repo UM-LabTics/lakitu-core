@@ -14,9 +14,11 @@ export default function Header() {
             &lt; Back
         </Button>
 
-        <Link href="/home" className="h-full">
-            <Image src="/imagotipo_animado.svg" alt="Logo" fill={true} />
-        </Link>
+        <div className="relative h-[200%] w-1/3">
+            <Link href="/home">
+                <Image src="/imagotipo_animado.svg" alt="Logo" fill={true} />
+            </Link>
+        </div>
 
         <Button variant="text" className="text-xl lg:text-3xl" onClick={logout}>
             Logout
