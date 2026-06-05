@@ -9,7 +9,7 @@ export default function MainLayout({
   return (
     <div className="min-h-screen h-full flex flex-col">
         <Header />
-        <main className="w-full flex items-center justify-baseline pt-[25vh]">
+        <main className="w-full flex items-center justify-baseline pt-[30vh]">
             {children}
         </main>
 

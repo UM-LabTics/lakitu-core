@@ -14,7 +14,7 @@ export default function Header() {
             &lt; Back
         </Button>
 
-        <div className="relative h-[200%] w-1/3">
+        <div className="relative h-[200%] w-1/3 -translate-y-1/18">
             <Link href="/home">
                 <Image src="/imagotipo_animado.svg" alt="Logo" fill={true} />
             </Link>
