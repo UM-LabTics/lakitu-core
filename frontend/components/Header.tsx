@@ -8,7 +8,7 @@ import Link from "next/link";
 
 export default function Header() {
   return (
-      <header className="h-1/4 overflow-clip w-full absolute flex top-0 items-center justify-between pt-12 px-2 md:px-8 lg:px-32 bg-amber-200">
+      <header className="h-1/4 overflow-clip w-full absolute flex top-0 items-center justify-between pt-12 px-2 md:px-8 lg:px-32">
 
         <Button variant="text" className="text-xl lg:text-3xl" onClick={() => window.history.back()}>
             &lt; Back
