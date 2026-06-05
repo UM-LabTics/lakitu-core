@@ -24,7 +24,7 @@ export default function Card({
   return (
     <div className={`${variantClass[variant]} ${className} flex flex-col`}>
       {title && (
-        <div className="mb-4 flex flex-col justify-center items-center h-full w-full">
+        <div className="mb-4 flex flex-col justify-center items-center h-fit w-full">
           <h1
             className={`text-center font-medium ${
               isDark ? "text-primary-super-light" : "text-primary"
