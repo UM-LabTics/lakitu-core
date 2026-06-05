@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const PUBLIC_ROUTES = ["/login", "/signup"];
 
 export function middleware(request: NextRequest) {
+  /*
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("session_token")?.value;
 
@@ -19,7 +20,7 @@ export function middleware(request: NextRequest) {
   if (pathname === "/") {
     return NextResponse.redirect(new URL("/home", request.url));
   }
-
+*/
   return NextResponse.next();
 }
 
