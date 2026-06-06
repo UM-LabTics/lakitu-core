@@ -33,7 +33,7 @@ export default function Card({
             {title}
           </h1>
           <div
-            className={`mt-4 h-1 rounded-xl w-full ${
+            className={`h-1 rounded-xl w-full ${
               isDark ? "bg-primary-super-light" : "bg-primary-light"
             }`}
           />

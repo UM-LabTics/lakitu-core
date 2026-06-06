@@ -1,5 +1,5 @@
 export async function getParkingLots() {
-    await sleep(1500); // Simulate network delay
+    await sleep(500); // Simulate network delay
 
     // Simulated parking lot data
     return [

@@ -42,7 +42,7 @@ const NO_DATA_MESSAGES: Record<SocketStatus, string> = {
   "max-attempts-reached": "Unable to connect to the parking lot.",
 };
 
-export function ParkingDisplay({ latestState, connectionStatus }: ParkingDisplayProps) {
+export default function ParkingDisplay({ latestState, connectionStatus }: ParkingDisplayProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [spotDims, setSpotDims] = useState<{ width: number; height: number } | null>(null);
 
@@ -95,14 +95,17 @@ export function ParkingDisplay({ latestState, connectionStatus }: ParkingDisplay
   const status = connectionStatus ?? "connecting";
 
   return (
-    <div className="flex flex-col justify-start items-center w-full h-full">
+    <div className="flex flex-col justify-start items-end w-full h-full">
       {!latestState ? (
-        <Card title="Parking Lot" className="h-17/20 w-1/4">
+        <Card title="Parking Lot" className="h-17/20 w-1/2">
+          <div className="-translate-y-4">
+              <p className="text-center text-primary text-base xl:text-xl">
+                {NO_DATA_MESSAGES[status]}
+              </p>
+              <div className="w-full h-1 bg-primary-light rounded-xl" />
+            </div>
           <div className="flex flex-col items-center justify-center gap-3 h-full">
             {status !== "max-attempts-reached" && <Spinner />}
-            <p className="text-lg xl:text-xl text-center">
-              {NO_DATA_MESSAGES[status]}
-            </p>
           </div>
         </Card>
       ) : (
