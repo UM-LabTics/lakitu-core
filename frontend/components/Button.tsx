@@ -19,7 +19,7 @@ export default function Button({
   type = "button",
   className = "",
   width = "320px",
-  height = "50px",
+  height = "auto",
 }: ButtonProps) {
   return (
     <button

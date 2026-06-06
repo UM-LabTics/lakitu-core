@@ -1,10 +1,7 @@
-import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { Fredoka } from "next/font/google";
 import "./globals.css";
 
-import Button from "@/components/Button";
-import { logout } from "@/lib/api/auth";
 
 const fredoka = Fredoka({
   variable: "--font-fredoka",
@@ -25,21 +22,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const token = (await cookies()).get("session_token")?.value;
 
   return (
     <html
       lang="en"
       className={`${fredoka.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        {token && (
-          <nav className="w-full h-16 flex items-center justify-end gap-4 px-6 bg-secondary-dark">
-            <Button onClick={logout}>
-              Log out
-            </Button>
-          </nav>
-        )}
+      <body className="min-h-full h-full flex flex-col">
         {children}
       </body>
     </html>

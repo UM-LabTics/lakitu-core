@@ -75,15 +75,15 @@ Estilos globales para elementos HTML sin clases.
   }
 
   h1 {
-    @apply text-primary text-3xl md:text-4xl xl:text-5xl font-bold leading-tight py-2;
+    @apply text-primary text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight py-2;
   }
 
   h2 {
-    @apply text-primary text-3xl lg:text-4xl font-semibold py-2;
+    @apply text-primary text-2xl lg:text-3xl xl:text-4xl font-semibold py-2;
   }
 
   h3 {
-    @apply text-primary text-2xl font-semibold mb-4;
+    @apply text-primary text-lg lg:text-xl xl:text-2xl font-semibold mb-4;
   }
 
   ul {
@@ -106,7 +106,7 @@ Clases reutilizables para componentes comunes.
   /* Filled button */
   .btn-contained {
     @apply inline-flex items-center justify-center gap-2
-           px-5 py-2 text-2xl font-normal cursor-pointer select-none
+           px-5 py-2 text-lg xl:text-2xl font-normal cursor-pointer select-none
            transition-all duration-200 ease-in-out
            bg-primary text-secondary;
     border-radius: var(--radius-lg);
@@ -118,7 +118,7 @@ Clases reutilizables para componentes comunes.
   /* Text/ghost button */
   .btn-text {
     @apply inline-flex items-center justify-center gap-2
-           px-5 py-2 text-2xl font-normal cursor-pointer select-none
+           px-5 py-2 text-lg xl:text-2xl font-normal cursor-pointer select-none
            transition-all duration-200 ease-in-out
            bg-transparent text-secondary-dark;
     border-radius: var(--radius-lg);
@@ -130,7 +130,7 @@ Clases reutilizables para componentes comunes.
   /* Admin button — flipped colors */
   .admin-btn {
     @apply inline-flex items-center justify-center gap-2
-           px-5 py-2 text-xl font-medium cursor-pointer select-none
+           px-5 py-2 text-lg xl:text-2xl font-medium cursor-pointer select-none
            transition-all duration-200 ease-in-out
            bg-secondary text-primary;
     border-radius: var(--radius-lg);
@@ -144,14 +144,14 @@ Clases reutilizables para componentes comunes.
    * ---------------------------------------------------------- */
 
   .card {
-    @apply p-6;
+    @apply p-2 lg:p-6;
     background-color: var(--crema);
     border-radius: var(--radius-xl);
     box-shadow: 0px 5px 10px 5px rgba(0, 0, 0, 0.25);
   }
 
   .card-light {
-    @apply p-6;
+    @apply p-2 lg:p-6;
     background-color: var(--primary-super-light);
     border-radius: var(--radius-xl);
     border: 3px solid var(--primary-light);
@@ -159,7 +159,7 @@ Clases reutilizables para componentes comunes.
   }
 
   .card-dark {
-    @apply p-6 text-primary-super-light;
+    @apply p-2 lg:p-6 text-primary-super-light;
     background-color: var(--primary-light);
     border-radius: var(--radius-xl);
     border: 3px solid var(--primary-super-light);
@@ -173,7 +173,9 @@ Clases reutilizables para componentes comunes.
   .input {
     @apply px-4 py-2 w-full
            text-primary
-           text-xl
+           text-sm
+           lg:text-base
+           xl:text-2xl
            outline-none
            transition-colors duration-150;
     background-color: var(--background);
