@@ -1,4 +1,6 @@
+'use client';
 import { ReactNode } from "react";
+import { useAuth } from "@/app/auth-provider";
 
 interface AdminButtonProps {
   children: ReactNode;
@@ -19,12 +21,14 @@ export default function AdminButton({
   width = "320px",
   height = "auto",
 }: AdminButtonProps) {
+  const {isAdmin} = useAuth();
+
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`admin-btn disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${className}`}
+      className={`${isAdmin ? '' : 'hidden'} admin-btn disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${className}`}
       style={{ width, height }}
     >
       {children}

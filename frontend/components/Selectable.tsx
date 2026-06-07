@@ -16,7 +16,7 @@ export default function Selectable({
   selected = false,
   onClick,
   className = "",
-  height = "50px",
+  height = "auto",
   width = "100%",
 }: SelectableProps) {
   return (

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Fredoka } from "next/font/google";
 import "./globals.css";
-
+import AuthProvider from "./auth-provider";
+import { cookies } from "next/headers";
 
 const fredoka = Fredoka({
   variable: "--font-fredoka",
@@ -22,14 +23,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
+  const isAdmin = (await cookies()).get('is_admin')?.value === "1"
   return (
     <html
       lang="en"
       className={`${fredoka.variable} h-full antialiased`}
     >
       <body className="min-h-full h-full flex flex-col">
-        {children}
+        <AuthProvider isAdmin={isAdmin}>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
