@@ -168,11 +168,30 @@ class Persistence:
             async with self.engine.connect() as conn:
                 state = await self._get_state_at(conn, parking_id, moment)
                 free = sum(1 for s in state.values() if s == 0)
+                
+                # Find the timestamp of the most recent event before or at the moment
+                last_event_row = await conn.execute(
+                    select(event.c.timestamp, event.c.image_url)
+                    .join(event_spot, event.c.id == event_spot.c.event_id)
+                    .where(
+                        and_(
+                            event_spot.c.parking_id == parking_id,
+                            event.c.timestamp <= moment,
+                        )
+                    )
+                    .order_by(event.c.timestamp.desc())
+                    .limit(1)
+                )
+                last_event = last_event_row.mappings().first()
+
+                actual_timestamp = last_event["timestamp"] if last_event else moment
+                actual_image_url = last_event["image_url"] if last_event else None
+                
                 return self._build_state_snapshot(
                     parking_id=parking_id,
-                    timestamp=moment,
+                    timestamp=actual_timestamp,
                     free_spots=free,
-                    image_url=None,
+                    image_url=actual_image_url,
                     state=state,
                 )
         except Exception as e:
