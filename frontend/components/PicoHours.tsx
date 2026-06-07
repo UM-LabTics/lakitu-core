@@ -56,7 +56,7 @@ export default function PicoHours({ stats, parkingSize }: OccupancyGraphProps) {
                     </span>
                 </div>
 
-                <div className="flex-1 flex items-center pr-1.5 py-1">
+                <div className="flex-1 flex items-center pr-1.5 py-0.5">
                     <div
                         className={`
                         h-full rounded-r-sm transition-[width] duration-500 ease-out

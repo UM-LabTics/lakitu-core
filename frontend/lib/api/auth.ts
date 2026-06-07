@@ -49,7 +49,7 @@ export async function login(
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
-  (await cookies()).set("is_admin", data?.user?.is_admin ?? '1', {
+  (await cookies()).set("is_admin", data?.user?.is_admin ?? '0', {
     httpOnly: true,
     secure: process.env.ENVIRONMENT === "production",
     sameSite: "lax",
