@@ -22,8 +22,8 @@ export async function getStatesBetween(
   parkingId: string,
   from: string,  // ISO datetime string
   to: string,    // ISO datetime string
-  limit: number = 20,
   page: number = 1,
+  limit: number = 20,
 ): Promise<StatesResponse> {
   const url = `${API_URL}/api/events?parking_id=${parkingId}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&limit=${limit}&page=${page}`;
   const response = await fetch(url);

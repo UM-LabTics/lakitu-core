@@ -117,14 +117,14 @@ export default function PastQuerier() {
         const toIso   = buildDatetime(toDate, toTime);
 
         const states = await getStatesBetween(selectedLotId, fromIso, toIso);
-        sessionStorage.setItem(LIST_SESSION_KEY, JSON.stringify(states.items));
+        sessionStorage.setItem(LIST_SESSION_KEY, JSON.stringify(states));
 
         const params = new URLSearchParams({
           fromDatetime: fromIso,
           toDatetime:   toIso,
           lotId:        selectedLotId,
-          lotName,                      // threaded through so the list page
-        });                             // can pass it to each state click URL
+          lotName,
+        });
         router.push(`/pastQueries/list?${params.toString()}`);
       }
     } catch (err) {

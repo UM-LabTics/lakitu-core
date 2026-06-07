@@ -1,8 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { getStateAt, getStatesBetween } from "@/lib/api/events";
-import type { ParkingSpot, ParkingStateSnapshot, StatesResponse } from "@/lib/types/parking";
 import PastQuerier from "./pastQuerier";
 
 export default function PastQueries() {

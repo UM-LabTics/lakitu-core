@@ -25,6 +25,7 @@ export default async function Page({
       toDatetime={toDatetime}
       lotId={lotId}
       lotName={lotName}
+      page={'1'}
     />
   );
 }
