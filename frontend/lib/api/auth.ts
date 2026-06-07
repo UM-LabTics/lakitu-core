@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { userAgent } from "next/server";
 
 const API_URL = process.env.BACKEND_INTERNAL_URL ?? "http://backend:8000";
 
@@ -42,6 +43,13 @@ export async function login(
 
   const data = await response.json();
   (await cookies()).set("session_token", data.token, {
+    httpOnly: true,
+    secure: process.env.ENVIRONMENT === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+  (await cookies()).set("is_admin", data?.user?.is_admin ?? '1', {
     httpOnly: true,
     secure: process.env.ENVIRONMENT === "production",
     sameSite: "lax",
@@ -103,12 +111,20 @@ export async function signup(
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
+  (await cookies()).set("is_admin", data?.user?.is_admin ?? '0', {
+    httpOnly: true,
+    secure: process.env.ENVIRONMENT === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
 
   redirect("/liveFeed");
 }
 
 export async function logout() {
   (await cookies()).delete('session_token');
+  (await cookies()).delete('is_admin');
   redirect('/login');
 }
 

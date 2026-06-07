@@ -95,7 +95,7 @@ export default function ParkingDisplay({ latestState, connectionStatus }: Parkin
   const status = connectionStatus ?? "connecting";
 
   return (
-    <div className="flex flex-col justify-start items-end w-full h-full">
+    <div className="flex flex-col justify-start items-center sm:items-end w-full h-full">
       {!latestState ? (
         <Card title="Parking Lot" className="h-17/20 w-1/2">
           <div className="-translate-y-4">

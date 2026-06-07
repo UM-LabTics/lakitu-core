@@ -31,8 +31,8 @@ export default function ParkingFeedPage({ params }: Props) {
   return (
     <div className="flex justify-baseline items-center w-full min-h-full">
       <ParkingDisplay latestState={latestState} connectionStatus={connectionStatus} />
-      <div className="flex flex-col justify-start items-start pl-4 xl:pl-8 w-1/2 h-full">
-        <div className="w-3/4 h-17/20">
+      <div className="hidden sm:flex flex-col justify-start items-start pl-4 xl:pl-8 w-2/3 h-full">
+        <div className="w-3/4 xl:w-1/2 h-17/20">
           <PicoHours stats={dailyOccupancy} parkingSize={12} />
         </div>
       </div>
