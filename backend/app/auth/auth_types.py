@@ -4,6 +4,7 @@ class TokenPayload(BaseModel):
     sub: str        # id del usuario
     exp: int        # expiración
     iat: int        # fecha de creación
+    is_admin: bool
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -21,3 +22,4 @@ class LoginRequest(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: str
+    is_admin: bool

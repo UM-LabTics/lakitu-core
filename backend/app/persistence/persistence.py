@@ -354,9 +354,10 @@ class Persistence:
             async with self.engine.connect() as conn:
                 result = await conn.execute(
                     select(has_access.c.parking_id)
+                    .join(parking_lot, parking_lot.c.id == has_access.c.parking_id)
                     .where(has_access.c.user_id == user_id)
                 )
-                return [row[0] for row in result]
+                return [{"parking_id": row[0], "name": row[1]} for row in result]
         except Exception as e:
             logger.error(f"Failed to list parking access for user {user_id}: {e}")
             return []
@@ -369,7 +370,7 @@ class Persistence:
         try:
             async with self.engine.connect() as conn:
                 result = await conn.execute(
-                    select(user.c.id, user.c.email, user.c.hashed_password)
+                    select(user.c.id, user.c.email, user.c.hashed_password, user.c.is_admin)
                     .where(user.c.email == email)
                 )
                 row = result.mappings().first()

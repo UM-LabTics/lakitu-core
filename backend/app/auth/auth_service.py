@@ -27,8 +27,8 @@ class AuthService:
         )
         if user_id is None:
             return None
-        user = UserResponse(id=user_id, email=req.email)
-        token = self.create_token(str(user_id))
+        user = UserResponse(id=user_id, email=req.email, is_admin=False)
+        token = self.create_token(str(user_id), is_admin=False)
         return user, token
 
     async def login(self, req: LoginRequest) -> tuple[UserResponse, TokenResponse] | None:
@@ -37,8 +37,8 @@ class AuthService:
             return None
         if not self._verify_password(req.password, user_data["hashed_password"]):
             return None
-        user = UserResponse(id=user_data["id"], email=user_data["email"])
-        token = self.create_token(str(user_data["id"]))
+        user = UserResponse(id=user_data["id"], email=user_data["email"], is_admin=bool(user_data["is_admin"]))
+        token = self.create_token(str(user_data["id"]), is_admin=bool(user_data["is_admin"]))
         return user, token
 
     async def validate_credentials(self, email: str, password: str) -> UserResponse | None:
@@ -51,14 +51,15 @@ class AuthService:
             return None
         if not self._verify_password(password, user_data["hashed_password"]):
             return None
-        return UserResponse(id=user_data["id"], email=user_data["email"])
-    
+        return UserResponse(id=user_data["id"], email=user_data["email"], is_admin=bool(user_data["is_admin"]))
+        
     def create_token(self, user_id: str) -> TokenResponse:
         now = datetime.utcnow()
         payload = {
             "sub": user_id,
             "iat": now,
-            "exp": now + timedelta(minutes=settings.jwt_expire_minutes)
+            "exp": now + timedelta(minutes=settings.jwt_expire_minutes),
+            "is_admin": is_admin
         }
         token = jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
         return TokenResponse(access_token=token)
