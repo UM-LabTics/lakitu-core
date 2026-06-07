@@ -3,7 +3,8 @@ export async function getParkingLots() {
 
     // Simulated parking lot data
     return [
-        { id: "p01", name: "Edificio Parque de Innovación del LATU" },
+        { id: "01", name: "Edificio Parque de Innovación del LATU id=01" },
+        { id: "p01", name: "Edificio Parque de Innovación del LATU id=p01" },
         { id: "mock-01", name: "mock parking lot" },
         { id: "p02", name: "Another Parking Lot" },
         { id: "p03", name: "Yet Another Parking Lot" },

@@ -9,6 +9,7 @@ import { getParkingLots } from "@/lib/api/parkingLots";
 import { useState, useEffect } from "react";
 import { getStateAt, getStatesBetween } from "@/lib/api/events";
 import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface ParkingLot {
   id: string;
@@ -18,15 +19,12 @@ interface ParkingLot {
 const LIST_SESSION_KEY  = "pastQueryList";   // array de ParkingState
 const STATE_SESSION_KEY = "pastQueryState";  // ParkingState
 
-
 function buildDatetime(date: string, time: string): string {
   const [h, m] = time.split(":").map(Number);
   const base = new Date(`${date}T00:00:00Z`);
-  // setUTCHours auto-advances the day when h+3 overflows past 23
   base.setUTCHours(h + 3, m, 0, 0);
   return base.toISOString();
 }
-
 
 export default function PastQuerier() {
   const [parkingLots, setParkingLots]     = useState<ParkingLot[]>([]);
@@ -40,6 +38,8 @@ export default function PastQuerier() {
   const [toDate, setToDate]     = useState("");
   const [toTime, setToTime]     = useState("23:59");
   const [loading, setLoading]   = useState(false);
+
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchParkingLots() {
@@ -93,17 +93,26 @@ export default function PastQuerier() {
     setError(null);
     setLoading(true);
 
+    // Resolve lot name once — used in URL params for both branches
+    const lotName = parkingLots.find((l) => l.id === selectedLotId)?.name ?? "";
+
     try {
       if (!showTo || !toDate) {
-        // solo from
-        const state = await getStateAt(
-          selectedLotId,
-          buildDatetime(fromDate, fromTime)
-        );
+        // ── Point-in-time query ──────────────────────────────────────────
+        const dtIso = buildDatetime(fromDate, fromTime);
+        const state = await getStateAt(selectedLotId, dtIso);
         sessionStorage.setItem(STATE_SESSION_KEY, JSON.stringify(state));
-        window.location.href = "/pastQueries/state";
+
+        // Bake datetime + lotId + lotName into URL so the state page can
+        // re-fetch on refresh / direct link without needing sessionStorage.
+        const params = new URLSearchParams({
+          datetime: dtIso,
+          lotId:    selectedLotId,
+          lotName,
+        });
+        router.push(`/pastQueries/state?${params.toString()}`);
       } else {
-        // from y to
+        // ── Range query ──────────────────────────────────────────────────
         const fromIso = buildDatetime(fromDate, fromTime);
         const toIso   = buildDatetime(toDate, toTime);
 
@@ -114,13 +123,14 @@ export default function PastQuerier() {
           fromDatetime: fromIso,
           toDatetime:   toIso,
           lotId:        selectedLotId,
-        });
-        window.location.href = `/pastQueries/list?${params.toString()}`;
+          lotName,                      // threaded through so the list page
+        });                             // can pass it to each state click URL
+        router.push(`/pastQueries/list?${params.toString()}`);
       }
     } catch (err) {
       console.error("Query error:", err);
       setError("Failed to fetch data. Is the backend running?");
-      setLoading(false); // Only reset on error so the user can retry
+      setLoading(false);
     }
   }
 
@@ -173,11 +183,11 @@ export default function PastQuerier() {
           <div className="group flex items-center w-full pr-3">
             <div className="h-1 flex-1 rounded-xl bg-primary-light transition-colors duration-150 group-hover:bg-primary" />
             <button type="button" className="cursor-pointer" onClick={handleToggleTo}>
-                {showTo ? (
-                    <ChevronUp className="xl:size-8 transition-colors duration-150 group-hover:text-primary" />
-                ) : (
-                    <ChevronDown className="xl:size-8 transition-colors duration-150 group-hover:text-primary" />
-                )}
+              {showTo ? (
+                <ChevronUp className="xl:size-8 transition-colors duration-150 group-hover:text-primary" />
+              ) : (
+                <ChevronDown className="xl:size-8 transition-colors duration-150 group-hover:text-primary" />
+              )}
             </button>
           </div>
 

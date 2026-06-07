@@ -110,8 +110,8 @@ export default function ParkingDisplay({ latestState, connectionStatus }: Parkin
         </Card>
       ) : (
         <Card title={latestState.parking_name} className="min-h-17/20 items-center">
-          <div className="flex flex-col h-full gap-2">
-            <div className="-translate-y-4">
+          <div className="flex flex-col h-full w-full gap-2">
+            <div className="-translate-y-4 w-full">
               <p className="text-center text-primary text-base xl:text-xl">
                 Updated {formatTimestamp(latestState.timestamp)}
               </p>

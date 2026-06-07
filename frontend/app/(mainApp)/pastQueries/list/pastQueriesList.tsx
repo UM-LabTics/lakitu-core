@@ -5,8 +5,7 @@ import Card from "@/components/Card";
 import { getStatesBetween } from "@/lib/api/events";
 import { Loader2 } from "lucide-react";
 import { StatesResponse } from "@/lib/types/parking";
-
-// ── Types ──────────────────────────────────────────────────────────────────
+import { useRouter } from "next/navigation";
 
 interface ParkingSpot {
   spot_id: string;
@@ -16,25 +15,20 @@ interface ParkingSpot {
 export interface ParkingState {
   free_spots: number;
   image_url: string | null;
-  pi_timestamp: string; // ISO 8601, e.g. "2026-06-03T04:00:00+00:00"
+  pi_timestamp: string; // ISO 8601, "2026-06-03T04:00:00+00:00"
   spots: ParkingSpot[];
 }
 
 interface Props {
-  fromDatetime: string; // ISO UTC string from URL param
-  toDatetime: string;   // ISO UTC string from URL param
-  lotId: string;
+  fromDatetime: string;
+  toDatetime:   string;
+  lotId:        string;
+  lotName:      string; // forwarded into each state's URL for PastStateView
 }
-
-// ── Session keys ───────────────────────────────────────────────────────────
-// Must match the keys used in PastQuerier.tsx
 
 export const LIST_SESSION_KEY  = "pastQueryList";
 export const STATE_SESSION_KEY = "pastQueryState";
 
-// ── Formatters ─────────────────────────────────────────────────────────────
-
-/** "2026-06-03T04:00:00+00:00" → "03/06/2026" */
 function formatDate(iso: string): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -45,7 +39,6 @@ function formatDate(iso: string): string {
   ].join("/");
 }
 
-/** "2026-06-03T04:00:00+00:00" → "03/06/2026 04:00" */
 function formatDateTime(iso: string): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -61,12 +54,12 @@ function formatDateTime(iso: string): string {
   return `${date} ${time}`;
 }
 
-// ── Component ──────────────────────────────────────────────────────────────
-
-export default function PastQueriesList({ fromDatetime, toDatetime, lotId }: Props) {
+export default function PastQueriesList({ fromDatetime, toDatetime, lotId, lotName }: Props) {
   const [states, setStates]   = useState<ParkingState[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
     // ── Fast path: data came straight from PastQuerier via sessionStorage ──
@@ -102,27 +95,33 @@ export default function PastQueriesList({ fromDatetime, toDatetime, lotId }: Pro
         setError("Failed to fetch states. Is the backend running?")
       )
       .finally(() => setLoading(false));
-  // Props are derived from URL and never change during the page's lifetime
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleStateClick(state: ParkingState) {
     try {
       sessionStorage.setItem(STATE_SESSION_KEY, JSON.stringify(state));
-    } catch { /* quota exceeded — non-fatal; target page will handle absence */ }
-    window.location.href = "/pastQuery/state";
+    } catch { /* quota exceeded — non-fatal; state page will fall back to fetch */ }
+
+    // Pass datetime + lotId + lotName so the state page can re-fetch on
+    // refresh or direct link without depending on sessionStorage being present.
+    const params = new URLSearchParams({
+      datetime: state.pi_timestamp,
+      lotId,
+      lotName,
+    });
+    router.push(`/pastQueries/state?${params.toString()}`);
   }
 
   return (
     <Card title="Past States" className="min-w-1/3">
       <div className="flex flex-col w-full">
         <div className="-translate-y-4">
-              <p className="text-center text-primary text-base xl:text-xl">
-                {formatDate(fromDatetime)}&nbsp;&ndash;&nbsp;{formatDate(toDatetime)}
-              </p>
-            <div className="w-full h-1 bg-primary-light rounded-xl" />
+          <p className="text-center text-primary text-base xl:text-xl">
+            {formatDate(fromDatetime)}&nbsp;&ndash;&nbsp;{formatDate(toDatetime)}
+          </p>
+          <div className="w-full h-1 bg-primary-light rounded-xl" />
         </div>
-
 
         {loading && (
           <div className="flex justify-center py-8" role="status" aria-label="Loading states…">
@@ -143,8 +142,8 @@ export default function PastQueriesList({ fromDatetime, toDatetime, lotId }: Pro
         )}
 
         {!loading && !error && states && states.length > 0 && (
-          <div className="flex flex-col max-h-[40vh] overflow-y-auto -translate-y-4 
-          [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex flex-col max-h-[40vh] overflow-y-auto -translate-y-4
+            [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {states.map((state, i) => (
               <div
                 key={`${state.pi_timestamp}-${i}`}
@@ -166,16 +165,15 @@ export default function PastQueriesList({ fromDatetime, toDatetime, lotId }: Pro
                 <span className="text-base xl:text-lg text-secondary-dark tabular-nums">
                   {formatDateTime(state.pi_timestamp)}
                 </span>
-                <span className={`text-base xl:text-lg ${state.free_spots === 0 ? 'text-occupied' : 'text-secondary-dark'} tabular-nums`}>
+                <span className={`text-base xl:text-lg ${state.free_spots === 0 ? "text-occupied" : "text-secondary-dark"} tabular-nums`}>
                   {state.free_spots} free spot{state.free_spots !== 1 ? "s" : ""}
                 </span>
               </div>
             ))}
           </div>
         )}
-        
-        <div className="w-full h-1 bg-primary-light rounded-xl -translate-y-4" />
 
+        <div className="w-full h-1 bg-primary-light rounded-xl -translate-y-4" />
       </div>
     </Card>
   );

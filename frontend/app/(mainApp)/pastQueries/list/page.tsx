@@ -2,11 +2,11 @@ import PastQueriesList from "./pastQueriesList";
 
 interface SearchParams {
   fromDatetime?: string;
-  toDatetime?: string;
-  lotId?: string;
+  toDatetime?:   string;
+  lotId?:        string;
+  lotName?:      string; 
 }
 
-// Next.js 15+ — searchParams is a Promise that must be awaited
 export default async function Page({
   searchParams,
 }: {
@@ -14,8 +14,9 @@ export default async function Page({
 }) {
   const {
     fromDatetime = "",
-    toDatetime = "",
-    lotId = "",
+    toDatetime   = "",
+    lotId        = "",
+    lotName      = "",
   } = await searchParams;
 
   return (
@@ -23,6 +24,7 @@ export default async function Page({
       fromDatetime={fromDatetime}
       toDatetime={toDatetime}
       lotId={lotId}
+      lotName={lotName}
     />
   );
 }
