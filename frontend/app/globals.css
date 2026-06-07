@@ -79,7 +79,7 @@ Estilos globales para elementos HTML sin clases.
   }
 
   h2 {
-    @apply text-primary text-2xl lg:text-3xl xl:text-4xl font-semibold py-2;
+    @apply text-primary text-xl lg:text-2xl xl:text-3xl font-medium py-2;
   }
 
   h3 {

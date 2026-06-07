@@ -51,6 +51,7 @@ export default function Input({
     : variantIcon[variant];
 
   const hasIcon = icon !== null;
+  const today = new Date();
 
   function handleIconClick() {
     if (isPassword) {
@@ -66,6 +67,7 @@ export default function Input({
         name={name}
         ref={inputRef}
         type={inputType}
+        max={inputType === 'date' ? today.toISOString().split('T')[0] : undefined}
         value={value}
         placeholder={placeholder ?? variant.charAt(0).toUpperCase() + variant.slice(1)}
         disabled={disabled}
