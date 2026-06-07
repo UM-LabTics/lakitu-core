@@ -258,8 +258,8 @@ export default function PastQueriesList({ fromDatetime, toDatetime, lotId, lotNa
             </button>
             
           </div>
-          {!paginationLoading && <span className="text-sm xl:text-base text-secondary-dark text-center">
-              showing {(parseInt(page)-1)*20}-{parseInt(page)*20-1} of {totalUpdates}
+          {!paginationLoading && !!totalUpdates && <span className="text-sm xl:text-base text-secondary-dark text-center">
+              showing {(parseInt(page)-1)*20+1}-{Math.min(parseInt(page)*20,parseInt(totalUpdates))} of {totalUpdates}
             </span>}
           </div>
         )}
