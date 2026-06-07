@@ -5,10 +5,11 @@ import { signup } from "@/lib/api/auth";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import Input from "@/components/Input";
+import { useRouter } from "next/navigation";
 
 export default function SignupForm() {
   const [state, formAction, isPending] = useActionState(signup, null);
-
+  const router = useRouter()
   return (
     <div className="w-full h-full flex items-baseline justify-center">
       <form action={formAction} className="w-2/3 h-5/6 min-h-110">
@@ -41,7 +42,7 @@ export default function SignupForm() {
                 type="button"
                 variant="text"
                 className="w-fit"
-                onClick={() => (window.location.href = "/login")}
+                onClick={() => (router.push("/login"))}
               >
                 Log in
               </Button>
