@@ -10,6 +10,8 @@ import IconButton from "@/components/IconButton";
 import Image from "next/image";
 import Spinner from "@/components/LoadingSpinner";
 
+import { useAuth } from "@/app/auth-provider";
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface BackendState {
@@ -44,7 +46,7 @@ export default function PastStateView({ datetime, lotId, lotName }: Props) {
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState<string | null>(null);
   const [openModal, setOpenModal]       = useState(false);
-
+  const {isAdmin} = useAuth()
   
   useEffect(() => {
     try {
@@ -108,12 +110,12 @@ export default function PastStateView({ datetime, lotId, lotName }: Props) {
         <div className="w-fit h-full">
             <ParkingDisplay latestState={displayState} />
         </div>
-        <div className="h-full flex flex-col justify-end px-4">
+        <div className={isAdmin ? 'h-full flex flex-col justify-end px-4' : 'hidden'}>
             <IconButton icon={<Camera size={60} onClick={()=>{console.log(imageUrl); setOpenModal(true);}} />} />
             <div className="h-3/20" />
         </div>
               
-    {(openModal && !!imageUrl) && (
+    {(openModal && !!imageUrl && !!isAdmin) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="relative h-[80vh] w-[80vw]">
             <IconButton
