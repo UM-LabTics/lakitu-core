@@ -38,7 +38,7 @@ export default function ParkingFeedPage({ params }: Props) {
       <div className="hidden sm:flex flex-col justify-start items-start pl-4 xl:pl-8 w-2/3 h-full">
         <div className="w-3/4 xl:w-1/2 h-17/20 flex flex-col">
           <PicoHours stats={dailyOccupancy} parkingSize={12} />
-          <div className={`${isAdmin ? 'h-1/3 w-full flex flex-col justify-center gap-4 items-center pt-2 bg-amber-200' : 'hidden'}`}>
+          <div className={`${isAdmin ? 'h-1/3 w-full flex flex-col justify-center gap-4 items-center pt-2' : 'hidden'}`}>
             <AdminButton width="100%" height="auto" onClick={() => (window.location.href = "/stats")}>
               View Statistics
             </AdminButton>
