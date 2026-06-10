@@ -15,6 +15,7 @@ from app.settings import settings
 from app.api.rest.events import router as rest_router 
 from app.api.websockets.endpoints import router as ws_router
 from app.api.rest.auth import router as auth_router
+from app.api.rest.stats import router as stats_router
 
 
 def setup_logging() -> None:
@@ -62,3 +63,4 @@ app.add_middleware(
 app.include_router(ws_router)
 app.include_router(rest_router)
 app.include_router(auth_router)
+app.include_router(stats_router)
