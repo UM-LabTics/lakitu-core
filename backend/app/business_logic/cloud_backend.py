@@ -68,7 +68,12 @@ class CloudBackend:
             state_json = await self.redis_client.get(key)
             if state_json is None:
                 logger.error(f"Found empty state on Redis for parking_id={parking_id}\nResorting to DB.")
-                state_json = json.dumps(await self.persistence.get_state_at(parking_id,datetime.now()))
+                raw_db_state:dict = await self.persistence.get_state_at(parking_id,datetime.now())
+                raw_db_state["timestamp"] = raw_db_state["pi_timestamp"]
+                raw_db_state["parking_id"] = parking_id
+                raw_db_state.setdefault("parking_name","default parking name")
+                
+                state_json = json.dumps(raw_db_state)
         except redis.RedisError as e:
             logger.error(f"Failed to get current state from Redis for parking_id={parking_id}: {e}\nResorting to DB.")
             raw_db_state:dict = await self.persistence.get_state_at(parking_id,datetime.now())
