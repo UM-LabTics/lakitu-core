@@ -40,7 +40,7 @@ export default function PicoHours({ stats, parkingSize }: OccupancyGraphProps) {
   );
 
   return (
-    <Card title="Peak Hours" variant="dark" className="w-full h-full">
+    <Card title="Peak Hours" variant="dark" className="w-full h-full min-h-2/3">
         <div className="w-full h-full flex flex-col overflow-hidden gap-0 py-px">
         {sortedHours.map((hour) => {
             const value  = hourlyMax.get(hour) ?? 0;
@@ -51,7 +51,7 @@ export default function PicoHours({ stats, parkingSize }: OccupancyGraphProps) {
             <div key={hour} className="flex flex-1 min-h-0 items-stretch">
 
                 <div className="shrink-0 w-14 flex items-center justify-end pr-2 border-r-4 border-background">
-                    <span className="text-xs xl:text-sm font-mono leading-none text-background select-none">
+                    <span className="text-[8px] md:text-xs xl:text-sm font-mono leading-none text-background select-none">
                         {String(hour).padStart(2, "0")}:00
                     </span>
                 </div>
