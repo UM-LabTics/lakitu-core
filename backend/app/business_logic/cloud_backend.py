@@ -3,14 +3,13 @@ import logging
 import os
 from pathlib import Path
 import redis.asyncio as redis
-from datetime import timezone
+from datetime import timezone,datetime
 
 from app.models import ParkingLotState, SpotState, StateUpdateEvent
 
 from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.persistence import persistence
+from app.persistence.persistence import Persistence
 from app.api.websockets.manager import manager
 
 logger = logging.getLogger(__name__)
@@ -23,7 +22,7 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "production").lower()
 class CloudBackend:
     """ Encapsula la lógica de interacción con Redis, redirecciona peticiones y delega la comunicación con RDS y S3 a persistence. """
 
-    def __init__(self, redis_client: redis.Redis, persistence):
+    def __init__(self, redis_client: redis.Redis, persistence: Persistence):
         self.redis_client = redis_client
         self.persistence = persistence
 
@@ -63,14 +62,21 @@ class CloudBackend:
         await self.persistence.save_event(event)
 
     async def get_current_state(self, parking_id: str) -> ParkingLotState | None:
-        """ Intenta obtener el estado actual de un parking lot desde Redis. Si falla, devuelve None.""" # Después hagamos que si falla intente con persistence en la DB
+        """ Intenta obtener el estado actual de un parking lot desde Redis. Si falla, delega a persistence."""
         try:
             key = f"parking_lot:{parking_id}:state"
             state_json = await self.redis_client.get(key)
             if state_json is None:
-                logger.info(f"No current state found in Redis for parking_id={parking_id}.")
-                return None
-            return ParkingLotState.model_validate_json(state_json)
+                logger.error(f"Found empty state on Redis for parking_id={parking_id}\nResorting to DB.")
+                state_json = json.dumps(await self.persistence.get_state_at(parking_id,datetime.now()))
         except redis.RedisError as e:
-            logger.error(f"Failed to get current state from Redis for parking_id={parking_id}: {e}")
-            return None
+            logger.error(f"Failed to get current state from Redis for parking_id={parking_id}: {e}\nResorting to DB.")
+            raw_db_state:dict = await self.persistence.get_state_at(parking_id,datetime.now())
+            raw_db_state["timestamp"] = raw_db_state["pi_timestamp"]
+            raw_db_state["parking_id"] = parking_id
+            raw_db_state.setdefault("parking_name","default parking name")
+            
+            state_json = json.dumps(raw_db_state)
+        
+        print(f"state received:\n{state_json}")
+        return ParkingLotState.model_validate_json(state_json)
