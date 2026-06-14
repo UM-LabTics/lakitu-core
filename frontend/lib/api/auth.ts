@@ -119,7 +119,7 @@ export async function signup(
     maxAge: 60 * 60 * 24 * 7,
   });
 
-  redirect("/liveFeed");
+  redirect("/home");
 }
 
 export async function logout() {

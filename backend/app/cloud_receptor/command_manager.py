@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 # La respuesta se publica en un topic con este formato, el executionId siempre vive en el índice 3 al hacer split("/").
 #   commands/responses/{thingName}/{executionId}
 # (IoT Rule hace bridge desde $aws/commands/things/{thingName}/executions/{executionId}/response/json)
-RESPONSE_TOPIC = "commands/responses/+/+"
-EXECUTION_ID_TOPIC_INDEX = 3
+RESPONSE_TOPIC = "commands/+/+"
+EXECUTION_ID_TOPIC_INDEX = 2
 
 
 class CommandManager:
@@ -37,7 +37,7 @@ class CommandManager:
 
         # para enviar comandos a través de la API HTTP de IoT Data Plane (StartCommandExecution).
         self._iot_data = boto3.client(
-            "iot-data",
+            "iot-jobs-data",
             region_name=settings.aws_default_region,
             endpoint_url=f"https://{settings.iot_endpoint}",
         )
@@ -168,12 +168,11 @@ class CommandManager:
         MQTT callback para manejar respuestas de dispositivos. Extrae el executionId del topic, decodifica el payload JSON, y resuelve el future correspondiente.
         """
         parts = topic.split("/")
-        if len(parts) < 4:
+        if len(parts) < 3:
             logger.warning("CommandManager — unexpected response topic: '%s', ignoring.", topic)
             return
 
         execution_id = parts[EXECUTION_ID_TOPIC_INDEX]
-
         try:
             data: dict = json.loads(payload.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError):

@@ -33,12 +33,11 @@ export default function ParkingFeedPage({ params }: Props) {
   const {isAdmin} = useAuth();
 
   return (
-    <div className="flex justify-baseline items-center w-full min-h-full">
+    <div className="flex justify-baseline items-center h-17/20 min-h-110 gap-2 pb-4 sm:gap-4 lg:gap-6 xl:gap-8">
       <ParkingDisplay latestState={latestState} connectionStatus={connectionStatus} />
-      <div className="hidden sm:flex flex-col justify-start items-start pl-4 xl:pl-8 w-2/3 h-full">
-        <div className="w-3/4 xl:w-1/2 h-17/20 flex flex-col">
+        <div className={`w-full h-full hidden sm:flex flex-col justify-start items-start max-w-[30vw]`}>
           <PicoHours stats={dailyOccupancy} parkingSize={12} />
-          <div className={`${isAdmin ? 'h-1/3 w-full flex flex-col justify-center gap-4 items-center pt-2' : 'hidden'}`}>
+          <div className={`${isAdmin ? 'h-fit w-full flex flex-col justify-center gap-4 items-center pt-2' : 'hidden'}`}>
             <AdminButton width="100%" height="auto" onClick={() => (window.location.href = "/stats")}>
               View Statistics
             </AdminButton>
@@ -47,7 +46,6 @@ export default function ParkingFeedPage({ params }: Props) {
             </AdminButton>
           </div>
         </div>
-      </div>
     </div>
   );
 }

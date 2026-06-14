@@ -168,11 +168,30 @@ class Persistence:
             async with self.engine.connect() as conn:
                 state = await self._get_state_at(conn, parking_id, moment)
                 free = sum(1 for s in state.values() if s == 0)
+                
+                # Find the timestamp of the most recent event before or at the moment
+                last_event_row = await conn.execute(
+                    select(event.c.timestamp, event.c.image_url)
+                    .join(event_spot, event.c.id == event_spot.c.event_id)
+                    .where(
+                        and_(
+                            event_spot.c.parking_id == parking_id,
+                            event.c.timestamp <= moment,
+                        )
+                    )
+                    .order_by(event.c.timestamp.desc())
+                    .limit(1)
+                )
+                last_event = last_event_row.mappings().first()
+
+                actual_timestamp = last_event["timestamp"] if last_event else moment
+                actual_image_url = last_event["image_url"] if last_event else None
+                
                 return self._build_state_snapshot(
                     parking_id=parking_id,
-                    timestamp=moment,
+                    timestamp=actual_timestamp,
                     free_spots=free,
-                    image_url=None,
+                    image_url=actual_image_url,
                     state=state,
                 )
         except Exception as e:
@@ -190,17 +209,68 @@ class Persistence:
         """
         Returns the reconstructed full state of the parking lot
         at each event timestamp between from_dt and to_dt.
-        Starts from the base state at from_dt and applies changes forward.
+        Uses proper pagination with LIMIT/OFFSET.
         """
         offset = (page - 1) * limit
 
         try:
             async with self.engine.connect() as conn:
-                # Step 1: get base state at from_dt
+                # get base state at from_dt
                 running_state = await self._get_state_at(conn, parking_id, from_dt)
 
-                # Step 2: get all events in range
-                event_rows = await conn.execute(
+                # count total events in range (for pagination metadata)
+                count_subquery = (
+                    select(event.c.id)
+                    .join(event_spot, event.c.id == event_spot.c.event_id)
+                    .where(
+                        and_(
+                            event_spot.c.parking_id == parking_id,
+                            event.c.timestamp >= from_dt,
+                            event.c.timestamp <= to_dt,
+                        )
+                    )
+                    .distinct()
+                    .subquery()
+                )
+                count_result = await conn.execute(
+                    select(func.count()).select_from(count_subquery)
+                )
+                total = count_result.scalar_one()
+
+                # if page > 1, we need to apply all changes up to the offset so that the running_state is correct for the requested page
+                if offset > 0:
+                    pre_page_rows = await conn.execute(
+                        select(event)
+                        .join(event_spot, event.c.id == event_spot.c.event_id)
+                        .where(
+                            and_(
+                                event_spot.c.parking_id == parking_id,
+                                event.c.timestamp >= from_dt,
+                                event.c.timestamp <= to_dt,
+                            )
+                        )
+                        .distinct()
+                        .order_by(event.c.timestamp.asc())
+                        .limit(offset)
+                    )
+                    pre_page_events = pre_page_rows.mappings().all()
+
+                    # apply all changes before the current page to running_state
+                    for ev in pre_page_events:
+                        changed_rows = await conn.execute(
+                            select(event_spot.c.spot_id, event_spot.c.new_state)
+                            .where(
+                                and_(
+                                    event_spot.c.event_id == ev["id"],
+                                    event_spot.c.parking_id == parking_id,
+                                )
+                            )
+                        )
+                        for change in changed_rows.mappings().all():
+                            running_state[change["spot_id"]] = change["new_state"]
+
+                # fetch only the events for the requested page
+                page_rows = await conn.execute(
                     select(event)
                     .join(event_spot, event.c.id == event_spot.c.event_id)
                     .where(
@@ -212,17 +282,14 @@ class Persistence:
                     )
                     .distinct()
                     .order_by(event.c.timestamp.asc())
+                    .limit(limit)
+                    .offset(offset)
                 )
-                all_events = event_rows.mappings().all()
-                total = len(all_events)
+                paginated_events = page_rows.mappings().all()
 
-                # Step 3: paginate
-                paginated_events = all_events[offset: offset + limit]
-
-                # Step 4: for each event, apply its changes and build snapshot
+                # build snapshots for the page
                 snapshots = []
                 for ev in paginated_events:
-                    # Get what changed in this event
                     changed_rows = await conn.execute(
                         select(event_spot.c.spot_id, event_spot.c.new_state)
                         .where(
@@ -234,7 +301,6 @@ class Persistence:
                     )
                     changes = changed_rows.mappings().all()
 
-                    # Apply changes to running state
                     for change in changes:
                         running_state[change["spot_id"]] = change["new_state"]
 
@@ -348,12 +414,12 @@ class Persistence:
             logger.error(f"Failed to check access for user {user_id} to parking {parking_id}: {e}")
             return False
     
-    async def list_user_parking_access(self, user_id: int) -> list[str]:
-        """Lists all parking lot IDs that a user has access to."""
+    async def list_user_parking_access(self, user_id: int) -> list[dict]:
+        """Lists all parking lot IDs that a user has access to, with ID and name."""
         try:
             async with self.engine.connect() as conn:
                 result = await conn.execute(
-                    select(has_access.c.parking_id)
+                    select(has_access.c.parking_id, parking_lot.c.name)
                     .join(parking_lot, parking_lot.c.id == has_access.c.parking_id)
                     .where(has_access.c.user_id == user_id)
                 )
@@ -365,7 +431,7 @@ class Persistence:
     async def get_user_by_credentials(self, email: str) -> dict | None:
         """
         Fetches a user by email for credential validation.
-        Returns a dict with id, email, and hashed_password, or None if not found.
+        Returns a dict with id, email, and hashed_password and boolean is_admin, or None if not found.
         """
         try:
             async with self.engine.connect() as conn:
