@@ -139,6 +139,7 @@ class Persistence:
     def _build_state_snapshot(
         self,
         parking_id: str,
+        parking_name:str,
         timestamp: datetime,
         free_spots: int,
         image_url: Optional[str],
@@ -146,6 +147,8 @@ class Persistence:
     ) -> dict:
         """Builds the response dict for a single state snapshot."""
         return {
+            "parking_id":parking_id,
+            "parking_name":parking_name,
             "pi_timestamp": timestamp.isoformat(),
             "free_spots": free_spots,
             "image_url": image_url,
@@ -169,6 +172,12 @@ class Persistence:
                 state = await self._get_state_at(conn, parking_id, moment)
                 free = sum(1 for s in state.values() if s == 0)
                 
+                parking_name = (await conn.execute(
+                    select(parking_lot.c.name)
+                    .where(parking_lot.c.id == parking_id)
+                    .limit(1)
+                )).scalar_one()
+
                 # Find the timestamp of the most recent event before or at the moment
                 last_event_row = await conn.execute(
                     select(event.c.timestamp, event.c.image_url)
@@ -189,6 +198,7 @@ class Persistence:
                 
                 return self._build_state_snapshot(
                     parking_id=parking_id,
+                    parking_name=parking_name,
                     timestamp=actual_timestamp,
                     free_spots=free,
                     image_url=actual_image_url,
@@ -215,6 +225,11 @@ class Persistence:
 
         try:
             async with self.engine.connect() as conn:
+                parking_name = (await conn.execute(
+                    select(parking_lot.c.name)
+                    .where(parking_lot.c.id == parking_id)
+                    .limit(1)
+                )).scalar_one()
                 # get base state at from_dt
                 running_state = await self._get_state_at(conn, parking_id, from_dt)
 
@@ -309,6 +324,7 @@ class Persistence:
                     snapshots.append(
                         self._build_state_snapshot(
                             parking_id=parking_id,
+                            parking_name=parking_id,
                             timestamp=ev["timestamp"],
                             free_spots=free,
                             image_url=ev["image_url"],
