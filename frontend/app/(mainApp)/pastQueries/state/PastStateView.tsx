@@ -112,7 +112,6 @@ export default function PastStateView({ datetime, lotId, lotName }: Props) {
         </div>
         <div className={isAdmin ? 'h-full flex flex-col justify-end px-4' : 'hidden'}>
             <IconButton icon={<Camera size={60} onClick={()=>{console.log(imageUrl); setOpenModal(true);}} />} />
-            <div className="h-3/20" />
         </div>
               
     {(openModal && !!imageUrl && !!isAdmin) && (

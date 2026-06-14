@@ -20,7 +20,7 @@ export default async function Page({
   } = await searchParams;
 
   return (
-    <div className="w-full h-full flex justify-center">
+    <div className="w-full h-17/20 flex justify-center">
             <PastStateView
             datetime={datetime}
             lotId={lotId}
