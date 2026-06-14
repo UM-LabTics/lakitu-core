@@ -7,7 +7,7 @@ from pydantic import BaseModel
 router = APIRouter()
 
 class ParkingAccess(BaseModel):
-    parking_id: str
+    id: str
     name: str
 
 @router.get("/getParkings", response_model=list[ParkingAccess])

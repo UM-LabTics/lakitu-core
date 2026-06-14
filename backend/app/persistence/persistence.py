@@ -414,7 +414,7 @@ class Persistence:
             logger.error(f"Failed to check access for user {user_id} to parking {parking_id}: {e}")
             return False
     
-    async def list_user_parking_access(self, user_id: int) -> list[dict]:
+    async def list_user_parking_access(self, user_id: int) -> list[dict] | None:
         """Lists all parking lot IDs that a user has access to, with ID and name."""
         try:
             async with self.engine.connect() as conn:
@@ -423,10 +423,10 @@ class Persistence:
                     .join(parking_lot, parking_lot.c.id == has_access.c.parking_id)
                     .where(has_access.c.user_id == user_id)
                 )
-                return [{"parking_id": row[0], "name": row[1]} for row in result]
+                return [{"id": row[0], "name": row[1]} for row in result]
         except Exception as e:
             logger.error(f"Failed to list parking access for user {user_id}: {e}")
-            return []
+            return None
     
     async def get_user_by_credentials(self, email: str) -> dict | None:
         """
