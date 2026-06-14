@@ -22,4 +22,4 @@ class LoginRequest(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: str
-    is_admin: bool
+    is_admin: int

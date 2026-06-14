@@ -27,7 +27,7 @@ class AuthService:
         )
         if user_id is None:
             return None
-        user = UserResponse(id=user_id, email=req.email, is_admin=False)
+        user = UserResponse(id=user_id, email=req.email, is_admin=0)
         token = self.create_token(str(user_id), is_admin=False)
         return user, token
 
@@ -37,7 +37,7 @@ class AuthService:
             return None
         if not self._verify_password(req.password, user_data["hashed_password"]):
             return None
-        user = UserResponse(id=user_data["id"], email=user_data["email"], is_admin=bool(user_data["is_admin"]))
+        user = UserResponse(id=user_data["id"], email=user_data["email"], is_admin=user_data["is_admin"])
         token = self.create_token(str(user_data["id"]), is_admin=bool(user_data["is_admin"]))
         return user, token
 
@@ -51,9 +51,9 @@ class AuthService:
             return None
         if not self._verify_password(password, user_data["hashed_password"]):
             return None
-        return UserResponse(id=user_data["id"], email=user_data["email"], is_admin=bool(user_data["is_admin"]))
+        return UserResponse(id=user_data["id"], email=user_data["email"], is_admin=user_data["is_admin"])
         
-    def create_token(self, user_id: str) -> TokenResponse:
+    def create_token(self, user_id: str, is_admin: bool) -> TokenResponse:
         now = datetime.utcnow()
         payload = {
             "sub": user_id,
