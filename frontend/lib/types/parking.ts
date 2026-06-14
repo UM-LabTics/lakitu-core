@@ -23,6 +23,9 @@ interface ParkingStateSnapshot {
 
 interface StatesResponse {
   total: number;
+  page: number;
+  pages:number;
+  page_size:number;
   items: ParkingStateSnapshot[];
 }
 

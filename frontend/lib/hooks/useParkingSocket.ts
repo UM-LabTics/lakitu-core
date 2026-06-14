@@ -38,9 +38,10 @@ export function useParkingSocket(parkingId: string) {
         ws.onerror   = ()  => {
             console.error("WebSocket error occurred.");
             setConnectionStatus("error");
-        };
-        ws.onclose   = ()  => { 
-            console.log("WebSocket connection closed.");
+        }; 
+        ws.onclose   = (event)  => { 
+            console.log(`WebSocket connection closed. Code ${event.code}, Reason: ${event.reason}`);
+            console.log(`Clean? ${event.wasClean}`)
             setConnectionStatus("closed"); 
             scheduleReconnect(); 
         };

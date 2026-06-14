@@ -5,6 +5,7 @@ import { authenticatedFetch } from "./auth";
 // pero por ahora lo dejamos así pq Santi no implementó la necesidad de tokens en el back.
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const BUCKET = process.env.NEXT_PUBLIC_S3_BUCKET_NAME
 
 export async function getStateAt(
   parkingId: string,
@@ -13,18 +14,25 @@ export async function getStateAt(
   const url = `${API_URL}/api/events?parking_id=${parkingId}&from=${encodeURIComponent(from)}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Error: ${response.status}`);
-  return response.json();
+  const data = await response.json()
+  return {...data,image_url:`${!!data.image_url ? `https://${BUCKET}.s3.amazonaws.com/${data.image_url}` : null}`};
 }
 
 export async function getStatesBetween(
   parkingId: string,
   from: string,  // ISO datetime string
   to: string,    // ISO datetime string
-  limit: number = 20,
   page: number = 1,
+  limit: number = 20,
 ): Promise<StatesResponse> {
   const url = `${API_URL}/api/events?parking_id=${parkingId}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&limit=${limit}&page=${page}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Error: ${response.status}`);
-  return response.json();
-}
+  const data = await response.json();
+  return {
+    ...data,
+    items: data.items.map((state:ParkingStateSnapshot) => ({
+      ...state,
+      image_url: `${!!state.image_url ? `https://${BUCKET}.s3.amazonaws.com/${state.image_url}` : null}`,
+    })),
+  };}
