@@ -95,7 +95,7 @@ def build_payload(sequence_index: int) -> dict:
 
     spots = []
     for spot_index in range(NUM_SPOTS):
-        occupied = (sequence_index + spot_index) % 2 == 0
+        occupied = ((sequence_index*spot_index)*397 % 269)%2 == 0
         confidence = 0.99 if spot_index % 2 == 0 else 0.96
         last_changed = (
             base_time - datetime.timedelta(seconds=spot_index * 3)
