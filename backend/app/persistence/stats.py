@@ -24,7 +24,8 @@ class Stats:
         - occupancy: dict of {"HH:MM:SS": occupied_count, ...}
         - size: total number of spots in the parking lot
         
-        The first entry is always "00:00:00" with the base state at midnight.
+        The first entry is always "00:00:00" with the base state at midnight, 
+        which is N/D in case there is no data regarding the lot prior to the day chosen.
         Each subsequent entry corresponds to an event that changed the occupancy.
         """
         try:
