@@ -44,11 +44,15 @@ function buildSegments(
   for (const { x, val } of sorted) {
     if (val === "N/D") {
       if (current.length > 0) {
+        current.push({ x, y: current[current.length - 1].y });
         segments.push(current);
         current = [];
       }
     } else {
-      current.push({ x, y: val as number });
+      const yVal = val as number;
+      if (current.length === 0 || current[current.length - 1].y !== yVal) {
+        current.push({ x, y: yVal });
+      }
     }
   }
   if (current.length > 0) segments.push(current);
