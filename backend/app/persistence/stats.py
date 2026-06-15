@@ -76,7 +76,7 @@ class Stats:
                     return {"occupancy":occupancy,"size":parking_size}
                 else:
                     for row in occupancy_array:
-                        occupancy[row["timestamp"].time().isoformat()] = parking_size - row["free_spots"]
+                        occupancy[(row["timestamp"] - timedelta(hours=3)).time().isoformat()] = parking_size - row["free_spots"]
 
                 return {"occupancy": occupancy, "size": parking_size}
 
