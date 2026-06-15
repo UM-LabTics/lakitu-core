@@ -19,7 +19,7 @@ type OccupancyChartProps = {
 // Convertir a escalar para el eje x
 function timeToSeconds(t: string): number {
   const [h, m, s] = t.split(":").map(Number);
-  return h * 3600 + m * 60 + s;
+  return h * 3600 + m * 60 + Math.round(s);
 }
 
 // Para labels en el eje
@@ -34,7 +34,6 @@ type DataPoint = { x: number; y: number };
 function buildSegments(
   occupancy: Record<string, number | string>
 ): DataPoint[][] {
-
   const sorted = Object.entries(occupancy)
     .map(([time, val]) => ({ x: timeToSeconds(time), val }))
     .sort((a, b) => a.x - b.x);
@@ -53,6 +52,15 @@ function buildSegments(
     }
   }
   if (current.length > 0) segments.push(current);
+
+  const lastEntry = sorted.at(-1);
+  if (segments.length > 0 && lastEntry?.val !== "N/D") {
+    const lastSegment = segments[segments.length - 1];
+    const lastPoint = lastSegment[lastSegment.length - 1];
+    if (lastPoint.x < 86399) {
+      lastSegment.push({ x: 86399, y: lastPoint.y });
+    }
+  }
 
   return segments;
 }
