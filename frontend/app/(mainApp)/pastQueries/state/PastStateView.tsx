@@ -5,7 +5,7 @@ import ParkingDisplay, {
   ParkingState as DisplayState,
 } from "@/components/ParkingDisplay";
 import { getStateAt } from "@/lib/api/events";
-import { Camera, Loader2, X } from "lucide-react";
+import { Camera, X } from "lucide-react";
 import IconButton from "@/components/IconButton";
 import Image from "next/image";
 import Spinner from "@/components/LoadingSpinner";

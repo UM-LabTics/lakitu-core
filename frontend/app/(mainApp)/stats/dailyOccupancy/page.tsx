@@ -98,7 +98,7 @@ export default function DailyOccupancyPage() {
     ? "Select a date to view occupancy."
     : loadingOccupancy
     ? "Loading occupancy data…"
-    : null; // null means the chart is ready to render
+    : null;
 
   return (
     <div className="flex flex-col items-center justify-start h-full w-full pb-8 gap-8">
