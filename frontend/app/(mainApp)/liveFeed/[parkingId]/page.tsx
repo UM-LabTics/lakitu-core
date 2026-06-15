@@ -17,18 +17,25 @@ export default function ParkingFeedPage({ params }: Props) {
   const { parkingId } = use(params);
   const { connectionStatus, latestState } = useParkingSocket(parkingId);
   const [dailyOccupancy,setDailyOccupancy] = useState({});
+  const [parkingSize, setParkingSize]  =useState(0);
   useEffect(() => {
     async function fetchOccupancy() {
       try {
-        const lots = await getDailyOccupancy();
-        setDailyOccupancy(lots);
+        const date = new Date()
+        date.setDate(date.getDate() - 7)
+        const day = date.toISOString().split('T')[0]
+        console.log(day)
+
+        const {occupancy,size} = await getDailyOccupancy(parkingId,day);
+        setDailyOccupancy(occupancy);
+        setParkingSize(size);
       } catch (error) {
         console.error("Error fetching parking lots:", error);
       }
     }
 
     fetchOccupancy();
-  }, []);
+  }, [parkingId]);
 
   const {isAdmin} = useAuth();
 
@@ -36,7 +43,7 @@ export default function ParkingFeedPage({ params }: Props) {
     <div className="flex justify-baseline items-center h-17/20 min-h-110 gap-2 pb-4 sm:gap-4 lg:gap-6 xl:gap-8">
       <ParkingDisplay latestState={latestState} connectionStatus={connectionStatus} />
         <div className={`w-full h-full hidden sm:flex flex-col justify-start items-start max-w-[30vw]`}>
-          <PicoHours stats={dailyOccupancy} parkingSize={12} />
+          <PicoHours stats={dailyOccupancy} parkingSize={parkingSize} />
           <div className={`${isAdmin ? 'h-fit w-full flex flex-col justify-center gap-4 items-center pt-2' : 'hidden'}`}>
             <AdminButton width="100%" height="auto" onClick={() => (window.location.href = "/stats")}>
               View Statistics
