@@ -3,6 +3,7 @@ from app.api.rest.dependencies import get_current_user
 from app.auth.auth_types import TokenPayload
 from app.persistence.instance import persistence
 from pydantic import BaseModel
+import json
 
 router = APIRouter()
 
@@ -21,4 +22,11 @@ async def get_parkings(current_user: TokenPayload = Depends(get_current_user)):
 @router.get("/takePhoto")
 async def take_photo(request: Request, parking_id:str = Query(...)):
     device_id = persistence.get_device_from_parking(parking_id=parking_id)
+    if device_id is None:
+        raise HTTPException(status_code=404, detail=f"No device found for parking_id '{parking_id}'")
+
     response = request.app.state.cloud_receptor.send_command(payload={"parking_id":parking_id,"device_id":device_id,"commandName":"request-photo"})
+    if response is not None:
+        return response
+    else:
+        raise HTTPException(500)
