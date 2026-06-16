@@ -117,7 +117,7 @@ class CommandManager:
             TimeoutError: Si no se recibe respuesta dentro del timeout especificado.
             ClientError:  Si la llamada a StartCommandExecution falla (e.g. comando no encontrado, dispositivo offline, permisos insuficientes).
         """
-        target_arn = (f"arn:aws:iot:{self.settings.aws_default_region}:{self.settings.aws_account_id}:thing/{device_full_id}")
+        target_arn = (f"arn:aws:iot:{self.settings.aws_default_region}:{self.settings.aws_account_id}:thing/{device_full_id.split('-')[1]}")
 
         loop = asyncio.get_running_loop()
 
