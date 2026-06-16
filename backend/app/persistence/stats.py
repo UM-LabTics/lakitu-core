@@ -218,8 +218,19 @@ class Stats:
                 tz_offset = timezone(timedelta(hours=-3))
                 period_start = datetime.combine(from_date, time.min).replace(tzinfo=tz_offset)
                 period_end   = datetime.combine(to_date,   time.max).replace(tzinfo=tz_offset)
-                rotations = {}
                 async with self.engine.connect() as conn:
+
+                    spot_ids = [
+                        row[0] for row in (
+                            await conn.execute(
+                                select(spot.c.id).where(spot.c.parking_id == parking_id)
+                            )
+                        ).fetchall()
+                    ]
+                    if not spot_ids:
+                        return {"rotations": {}}
+                    rotations = {spot:0 for spot in spot_ids}
+                        
 
                     rot = (await conn.execute(
                             select(
