@@ -1,40 +1,59 @@
-export async function getDailyOccupancy() {
-    await sleep(500);
-    return {
-        "00:00:00": 0,
-        "06:42:15": 1,
-        "07:03:28": 3,
-        "07:18:41": 5,
-        "07:45:12": 7,
-        "08:02:37": 9,
-        "08:26:54": 11,
-        "08:41:20": 12,
-        "09:13:45": 10,
-        "09:47:03": 8,
-        "10:22:16": 6,
-        "11:05:38": 7,
-        "11:34:52": 9,
-        "12:10:11": 12,
-        "12:48:29": 11,
-        "13:26:07": 8,
-        "14:03:44": 5,
-        "14:37:12": 4,
-        "15:11:58": 6,
-        "15:49:23": 9,
-        "16:15:41": 12,
-        "16:58:09": 10,
-        "17:31:47": 11,
-        "18:04:15": 12,
-        "18:42:38": 9,
-        "19:18:52": 7,
-        "20:06:31": 5,
-        "20:54:17": 3,
-        "21:33:48": 2,
-        "22:17:09": 1,
-        "23:01:42": 0
-        };
+"use server";
+import { cookies } from "next/headers";
+
+const API_URL = `${process.env.BACKEND_INTERNAL_URL ?? "http://backend:8000"}/api/stats`;
+
+export async function getDailyOccupancy(parking_id: string, day: string) {
+    const url = `${API_URL}/dailyOccupancy?parkingId=${encodeURIComponent(parking_id)}&day=${encodeURIComponent(day)}`;
+    console.log(url);
+    const token = (await cookies()).get("session_token")?.value;
+    const response = await fetch(url, { method: "GET", headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) {
+        throw new Error(`error ${response.status} ${response.statusText} while fetching daily occupancy.`);
+    }
+    const stats = await response.json();
+    console.log(stats);
+    return stats;
 }
 
-function sleep(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+export type SpotsUsageResult = {
+    /** { spot_01: "HH:MM:SS", spot_02: "HH:MM:SS", … } */
+    spotsUsage: Record<string, string>;
+    avgTime: string;
+    avgPercentage: string;
+};
+
+export async function getSpotsUsage(parking_id: string, from_date: string, to_date: string) {
+    const url = `${API_URL}/spotsUsage?parkingId=${encodeURIComponent(parking_id)}&from_date=${encodeURIComponent(from_date)}&to_date=${encodeURIComponent(to_date)}`;
+    const token = (await cookies()).get("session_token")?.value;
+    const response = await fetch(url, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+        throw new Error(
+            `error ${response.status} ${response.statusText} while fetching spots usage.`
+        );
+    }
+    return response.json();
+}
+
+export type SpotsRotationsResult = {
+    /** { spot_01: x, spot_02: y, … } */
+    rotations: Record<string, number|string>;
+};
+
+export async function getSpotsRotations(parking_id: string, from_date: string, to_date: string) {
+    const url = `${API_URL}/spotsRotations?parkingId=${encodeURIComponent(parking_id)}&from_date=${encodeURIComponent(from_date)}&to_date=${encodeURIComponent(to_date)}`;
+    const token = (await cookies()).get("session_token")?.value;
+    const response = await fetch(url, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+        throw new Error(
+            `error ${response.status} ${response.statusText} while fetching spots rotations.`
+        );
+    }
+    return response.json();
 }
