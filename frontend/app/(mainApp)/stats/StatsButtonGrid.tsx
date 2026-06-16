@@ -15,9 +15,9 @@ export default function AdminButtonGrid() {
     const router = useRouter();
     const pathname = usePathname();
     return (
-        <div className="grid grid-cols-2 grid-rows-2 gap-4 w-fit pb-8">
+        <div className="grid grid-cols-2 grid-rows-2 gap-4 w-full pb-8">
         {ADMIN_BUTTONS.map((ref) => (
-            <AdminButton key={ref.href} onClick={()=>router.push(ref.href)} selected={pathname===ref.href} height="auto">
+            <AdminButton key={ref.href} onClick={()=>router.push(ref.href)} selected={pathname===ref.href} height="auto" width="auto" className="flex-1" >
                 {ref.text}
             </AdminButton>
         ))}
