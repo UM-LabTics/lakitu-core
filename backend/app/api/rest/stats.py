@@ -43,8 +43,9 @@ async def get_spot_rotations(
     to_date: date = Query(...)
 ):
     result = await stats.get_spots_rotations(parking_id=parkingId,from_date=from_date,to_date=to_date)
-    if result["spotsUsage"] == {}:
+    if result["rotations"] == {}:
         raise HTTPException(status_code=404, detail="Parking lot not found")
     if "error" in result.keys():
         raise HTTPException(status_code=500, detail=result["error"])
+    print(result)
     return result
