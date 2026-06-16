@@ -1,7 +1,7 @@
 import logging
 from datetime import date, datetime, timezone, time, timedelta
 
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, func, distinct
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.persistence.tables import event, event_spot, spot, parking_lot
@@ -209,3 +209,39 @@ class Stats:
         except Exception as e:
             logger.error(f"Failed to get spots usage: {e}")
             return {"spotsUsage": {}, "avgTime": "00:00:00", "avgPercentage": "0%", "error": str(e)}
+        
+
+
+    async def get_spots_rotations(self,parking_id,from_date,to_date)->dict:
+            """{spot_id:int} - each spot has its amount of events in the period."""
+            try:
+                tz_offset = timezone(timedelta(hours=-3))
+                period_start = datetime.combine(from_date, time.min).replace(tzinfo=tz_offset)
+                period_end   = datetime.combine(to_date,   time.max).replace(tzinfo=tz_offset)
+                rotations = {}
+                async with self.engine.connect() as conn:
+
+                    rot = (await conn.execute(
+                            select(
+                                event_spot.c.spot_id,
+                                func.count(distinct(event.c.id)).label("rotations")
+                                )
+                                .join(event,event_spot.c.event_id==event.c.id)
+                                .where(
+                                    and_(
+                                        event_spot.c.parking_id == parking_id,
+                                        event.c.timestamp >= period_start,
+                                        event.c.timestamp <= period_end
+                                    )
+                                )
+                                .group_by(event_spot.c.spot_id)
+                        )
+                    ).mappings().all()
+                    for r in rot:
+                        rotations[r["spot_id"]] = r["rotations"]
+                    
+                    return {"rotations":rotations}
+            
+            except Exception as e:
+                logger.error(f"Failed to get spots usage: {e}")
+                return {"rotations": {}, "error": str(e)}

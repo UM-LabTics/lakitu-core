@@ -34,3 +34,17 @@ async def get_spot_usage(
     if "error" in result.keys():
         raise HTTPException(status_code=500, detail=result["error"])
     return result
+
+
+@router.get("/spotsRotations")
+async def get_spot_rotations(
+    parkingId: str = Query(...),
+    from_date: date = Query(...),
+    to_date: date = Query(...)
+):
+    result = await stats.get_spots_rotations(parking_id=parkingId,from_date=from_date,to_date=to_date)
+    if result["spotsUsage"] == {}:
+        raise HTTPException(status_code=404, detail="Parking lot not found")
+    if "error" in result.keys():
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result
