@@ -27,8 +27,10 @@ export async function takePhoto(parking_id: string): Promise<string> {
     }
 
     const data = await response.json();
+    console.log("====================================")
+    console.log(data)
 
-    const base64 = data.snapshot;
+    const base64 = data[0].snapshot;
     if (!base64) {
         throw new Error("No snapshot returned from device.");
     }
