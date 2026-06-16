@@ -37,3 +37,23 @@ export async function getSpotsUsage(parking_id: string, from_date: string, to_da
     }
     return response.json();
 }
+
+export type SpotsRotationsResult = {
+    /** { spot_01: x, spot_02: y, … } */
+    rotations: Record<string, number|string>;
+};
+
+export async function getSpotsRotations(parking_id: string, from_date: string, to_date: string) {
+    const url = `${API_URL}/spotsRotations?parkingId=${encodeURIComponent(parking_id)}&from_date=${encodeURIComponent(from_date)}&to_date=${encodeURIComponent(to_date)}`;
+    const token = (await cookies()).get("session_token")?.value;
+    const response = await fetch(url, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+        throw new Error(
+            `error ${response.status} ${response.statusText} while fetching spots rotations.`
+        );
+    }
+    return response.json();
+}
