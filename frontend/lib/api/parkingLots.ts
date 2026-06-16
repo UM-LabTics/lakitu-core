@@ -12,3 +12,26 @@ export async function getParkingLots() {
     }
 
     return await response.json();}
+
+export async function takePhoto(parking_id: string): Promise<string> {
+    const url = `${API_URL}/takePhoto?parkingId=${parking_id}`;
+    const token = (await cookies()).get("session_token")?.value;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Error while establishing a connection to the camera: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    const base64 = data.snapshot;
+    if (!base64) {
+        throw new Error("No snapshot returned from device.");
+    }
+
+    return `data:image/jpeg;base64,${base64}`;
+}

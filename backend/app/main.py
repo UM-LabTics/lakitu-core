@@ -42,6 +42,7 @@ async def lifespan(app: FastAPI):
     cloud_backend = CloudBackend(redis_client, persistence)
     cloud_receptor = CloudReceptor(settings, cloud_backend)
     app.state.cloud_backend = cloud_backend
+    app.state.cloud_receptor = cloud_receptor
 
     # Empezar el polling de SQS
     await cloud_receptor.start()
