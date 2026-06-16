@@ -61,9 +61,12 @@ export default function DetailedParkingDisplay({
         if (!el || !total) return;
 
         const maxSpotsPerRow = Math.ceil(total / ROWS);
-        const cs     = window.getComputedStyle(el);
-        const rowGap = parseFloat(cs.rowGap)    || 0;
-        const colGap = parseFloat(cs.columnGap) || 0;
+        const cs         = window.getComputedStyle(el);
+        const rowGap     = parseFloat(cs.rowGap) || 0;
+        const firstRow   = el.children[0] as HTMLElement | undefined;
+        const colGap     = firstRow
+            ? parseFloat(window.getComputedStyle(firstRow).columnGap) || 0
+            : 0;
 
         const availH = el.clientHeight - (ROWS - 1) * rowGap;
         let spotH    = availH / ROWS;
@@ -129,7 +132,7 @@ export default function DetailedParkingDisplay({
                                 const start = rowIndex * base + Math.min(rowIndex, extra);
                                 const count = base + (rowIndex < extra ? 1 : 0);
                                 return (
-                                    <div key={rowIndex} className="flex gap-4 xl:gap-8">
+                                    <div key={rowIndex} className="flex gap-2 xl:gap-4">
                                         {spots.slice(start, start + count).map(([spotId, label]) => {
                                             const isAccessibility = parseInt(spotId.slice(5)) + 2 > total;
                                             return (

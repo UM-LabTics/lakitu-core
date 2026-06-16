@@ -95,9 +95,12 @@ export default function SpotsHeatmap({
         if (!el || !total) return;
 
         const maxSpotsPerRow = Math.ceil(total / ROWS);
-        const cs     = window.getComputedStyle(el);
-        const rowGap = parseFloat(cs.rowGap)    || 0;
-        const colGap = parseFloat(cs.columnGap) || 0;
+        const cs         = window.getComputedStyle(el);
+        const rowGap     = parseFloat(cs.rowGap) || 0;
+        const firstRow   = el.children[0] as HTMLElement | undefined;
+        const colGap     = firstRow
+            ? parseFloat(window.getComputedStyle(firstRow).columnGap) || 0
+            : 0;
 
         const availH = el.clientHeight - (ROWS - 1) * rowGap;
         let spotH    = availH / ROWS;
@@ -147,7 +150,7 @@ export default function SpotsHeatmap({
 
                     <div
                         ref={gridRef}
-                        className="flex flex-col gap-4 xl:gap-8 justify-center items-center flex-1"
+                        className="flex flex-col gap-2 xl:gap-4 justify-center items-center flex-1"
                     >
                         {(() => {
                             const base  = Math.floor(total / ROWS);
@@ -156,7 +159,7 @@ export default function SpotsHeatmap({
                                 const start = rowIndex * base + Math.min(rowIndex, extra);
                                 const count = base + (rowIndex < extra ? 1 : 0);
                                 return (
-                                    <div key={rowIndex} className="flex gap-4 xl:gap-8">
+                                    <div key={rowIndex} className="flex gap-2 xl:gap-4">
                                         {spots.slice(start, start + count).map(([spotId, time]) => {
                                             const secs = timeToSeconds(time);
                                             const t    = maxUsage === minUsage
