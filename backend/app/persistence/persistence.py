@@ -51,26 +51,33 @@ class Persistence:
             return None
 
     async def save_event(self, state_update: StateUpdateEvent) -> int | None:
-        """
-        Saves a state update event to PostgreSQL.
-        Only saves the spots that changed (as received from the Pi).
-        Returns the new event id, or None if it failed.
-        S3 image upload will be added later.
-        """
         try:
-            async with self.engine.begin() as conn: # opens a db connection and starts a transaction
-                # Insert the event row
+            async with self.engine.begin() as conn:
+
+                last_states = await self._get_state_at(
+                    conn,
+                    state_update.parking_id,
+                    state_update.timestamp.astimezone(timezone.utc),
+                )
+
+                changed_spots = [
+                    s for s in state_update.spots
+                    if last_states.get(s.spot_id, -1) != s.status
+                ]
+
+                if not changed_spots:
+                    logger.info(f"No spot changes detected for parking {state_update.parking_id}, skipping event.")
+                    return None
+
                 result = await conn.execute(
                     insert(event).values(
                         timestamp=state_update.timestamp.astimezone(timezone.utc),
                         free_spots=state_update.free_spots,
-                        image_url=None,  # we insert it as None at first and then update it after the s3 upload so if it fails, the event row still gets saved to the db
+                        image_url=None,
                     ).returning(event.c.id)
                 )
                 event_id = result.scalar_one()
 
-                # Upload snapshot to S3 and update image_url
-                image_url = None
                 if state_update.snapshot:
                     image_url = await self._upload_snapshot_to_s3(event_id, state_update.snapshot)
                     if image_url:
@@ -80,7 +87,6 @@ class Persistence:
                             .values(image_url=image_url)
                         )
 
-                # Insert one event_spot row per spot that changed
                 await conn.execute(
                     insert(event_spot),
                     [
@@ -91,13 +97,16 @@ class Persistence:
                             "device_id": state_update.device_id,
                             "new_state": s.status,
                         }
-                        for s in state_update.spots
+                        for s in changed_spots
                     ]
-)
+                )
+                logger.info("Succesfully saved event to RDS")
+                return event_id
 
         except Exception as e:
             logger.error(f"Failed to save event: {e}")
             return None
+    
 
     async def _get_spot_ids(self, conn, parking_id: str) -> list[str]:
         """Returns all spot IDs for a parking lot."""
