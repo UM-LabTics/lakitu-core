@@ -6,7 +6,7 @@ from sqlalchemy import insert, select, and_, func, update
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.models import StateUpdateEvent
-from app.persistence.tables import event, event_spot, spot, parking_lot, user, has_access
+from app.persistence.tables import event, event_spot, spot, parking_lot, user, has_access, device
 
 import asyncio
 import base64
@@ -468,4 +468,19 @@ class Persistence:
                 return dict(row) if row else None
         except Exception as e:
             logger.error(f"Failed to get user for credential validation: {e}")
+            return None
+        
+
+    async def get_device_from_parking(self,parking_id:str)->str | None:
+        try:
+            async with self.engine.connect() as conn:
+                row_result = (await conn.execute(
+                    select(device.c.id)
+                    .where(device.c.parking_id == parking_id)
+                    .limit(1)
+                )).first()
+                return row_result[0] if row_result else None
+            
+        except Exception as e:
+            logger.error(f"Failed to get device from parking id: {e}")
             return None
