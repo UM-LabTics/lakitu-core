@@ -21,11 +21,11 @@ async def get_parkings(current_user: TokenPayload = Depends(get_current_user)):
     
 @router.get("/takePhoto")
 async def take_photo(request: Request, parkingId:str = Query(...)):
-    device_id = persistence.get_device_from_parking(parking_id=parkingId)
+    device_id = await persistence.get_device_from_parking(parking_id=parkingId)
     if device_id is None:
         raise HTTPException(status_code=404, detail=f"No device found for parking_id '{parkingId}'")
 
-    response = request.app.state.cloud_receptor.send_command(payload={"parking_id":parkingId,"device_id":device_id,"commandName":"request-photo"})
+    response = await request.app.state.cloud_receptor.send_command(payload={"parking_id":parkingId,"device_id":device_id,"commandName":"request-photo"})
     if response is not None:
         return response
     else:
