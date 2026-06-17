@@ -10,9 +10,7 @@ services:
     env_file:
       - .env
     environment:
-      NEXT_PUBLIC_WS_URL: "wss://lakitubackend.duckdns.org/ws"
-      NEXT_PUBLIC_API_URL: "https://lakitubackend.duckdns.org"
-      BACKEND_INTERNAL_URL: "https://lakitubackend.duckdns.org"
+
       # ── Hot-reload fix ──────────────────────────
       TURBOPACK_WATCH_POLL: "200" # fuerza a turbopack a usar polling, aunque al final usamos webpack, por las dudas
       WATCHPACK_POLLING: "true"
