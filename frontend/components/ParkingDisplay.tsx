@@ -143,7 +143,7 @@ export default function ParkingDisplay({ latestState, connectionStatus }: Parkin
                         <SpotDisplay
                           key={spot.spot_id}
                           occupied={spot.status === 1}
-                          accessibility={parseInt(spot.spot_id.slice(5)) + 2 > total}
+                          accessibility={parseInt(spot.spot_id.slice(5)) + 1 > total}
                           width={spotDims?.width}
                           height={spotDims?.height}
                         />

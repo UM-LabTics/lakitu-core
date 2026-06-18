@@ -134,7 +134,7 @@ export default function DetailedParkingDisplay({
                                 return (
                                     <div key={rowIndex} className="flex gap-2 xl:gap-4">
                                         {spots.slice(start, start + count).map(([spotId, label]) => {
-                                            const isAccessibility = parseInt(spotId.slice(5)) + 2 > total;
+                                            const isAccessibility = parseInt(spotId.slice(5)) + 1 > total;
                                             return (
                                                 <ParkingSpot
                                                     key={spotId}
