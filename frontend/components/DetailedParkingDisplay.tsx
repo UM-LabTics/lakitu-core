@@ -53,7 +53,7 @@ export default function DetailedParkingDisplay({
     const gridRef = useRef<HTMLDivElement>(null);
     const [spotDims, setSpotDims] = useState<{ width: number; height: number } | null>(null);
 
-    const spots = Object.entries(spotEntries);
+    const spots = Object.entries(spotEntries).sort(([idA,valueA],[idB,valueB])=>idA.localeCompare(idB));
     const total = spots.length;
 
     const computeSpotDims = useCallback(() => {

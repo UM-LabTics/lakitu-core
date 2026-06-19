@@ -139,7 +139,7 @@ export default function ParkingDisplay({ latestState, connectionStatus }: Parkin
 
                   return (
                     <div key={rowIndex} className="flex gap-4 xl:gap-8">
-                      {latestState.spots.slice(start, start + count).map((spot) => (
+                      {latestState.spots.sort((a,b)=>a.spot_id.localeCompare(b.spot_id)).slice(start, start + count).map((spot) => (
                         <SpotDisplay
                           key={spot.spot_id}
                           occupied={spot.status === 1}
