@@ -165,7 +165,7 @@ export default function SpotsHeatmap({
                                             const t    = maxUsage === minUsage
                                                 ? 0.5
                                                 : (secs - minUsage) / (maxUsage - minUsage);
-                                            const isAccessibility = parseInt(spotId.slice(5)) + 2 > total;
+                                            const isAccessibility = parseInt(spotId.slice(5)) + 1 > total;
                                             return (
                                                 <HeatmapSpot
                                                     key={spotId}
