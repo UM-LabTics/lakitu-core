@@ -19,9 +19,16 @@ interface Props {
 export const LIST_SESSION_KEY  = "pastQueryList";
 export const STATE_SESSION_KEY = "pastQueryState";
 
+const UTC_MINUS_3_OFFSET_MS = -3 * 60 * 60 * 1000;
+
+function toUtcMinus3(iso: string): Date {
+  const d = new Date(iso);
+  return new Date(d.getTime() + UTC_MINUS_3_OFFSET_MS);
+}
+
 function formatDate(iso: string): string {
   if (!iso) return "—";
-  const d = new Date(iso);
+  const d = toUtcMinus3(iso);
   return [
     String(d.getUTCDate()).padStart(2, "0"),
     String(d.getUTCMonth() + 1).padStart(2, "0"),
@@ -31,7 +38,7 @@ function formatDate(iso: string): string {
 
 function formatDateTime(iso: string): string {
   if (!iso) return "—";
-  const d = new Date(iso);
+  const d = toUtcMinus3(iso);
   const date = [
     String(d.getUTCDate()).padStart(2, "0"),
     String(d.getUTCMonth() + 1).padStart(2, "0"),
